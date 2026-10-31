@@ -6,6 +6,7 @@ export {
   getFeature,
   hasFeature,
   hasPermission,
+  accessTokenClaimsSchema,
   hasRole,
   idTokenClaimsSchema,
 } from "./claims.js";
@@ -34,6 +35,7 @@ export type {
 } from "./grants.js";
 export type { IntrospectionResult } from "./introspection.js";
 export type {
+  ClientCredentialsOptions,
   LoginHandshake,
   LoginRequest,
   LoginResult,

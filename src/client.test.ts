@@ -424,3 +424,79 @@ describe("verifyIdToken", () => {
     await expectAuthAiError(auth.verifyIdToken(expired), "TOK_001");
   });
 });
+
+describe("clientCredentials", () => {
+  it("requests a machine token with the given scope and resource", async () => {
+    idp.tokenHandler = () =>
+      jsonResponse({ access_token: "m", token_type: "Bearer", expires_in: 60 });
+    const tokens = await auth.clientCredentials({
+      scope: "billing:read",
+      resource: "https://app.test",
+    });
+    expect(tokens.accessToken).toBe("m");
+    expect(tokens.refreshToken).toBeUndefined();
+    const [request] = idp.requestsTo("/token");
+    expect(request?.form.get("grant_type")).toBe("client_credentials");
+    expect(request?.form.get("scope")).toBe("billing:read");
+    expect(request?.form.get("resource")).toBe("https://app.test");
+  });
+
+  it("surfaces a rejected client", async () => {
+    idp.tokenHandler = () => jsonResponse({ error: "invalid_scope" }, 400);
+    const err = await expectAuthAiError(
+      auth.clientCredentials({ scope: "wallet:debit" }),
+      "OIDC_003",
+    );
+    expect(err.details?.["oauthError"]).toBe("invalid_scope");
+  });
+
+  it("explains a client authentication challenge", async () => {
+    idp.tokenHandler = () =>
+      new Response(null, {
+        status: 401,
+        headers: { "www-authenticate": 'Basic realm="token"' },
+      });
+    const err = await expectAuthAiError(auth.clientCredentials(), "OIDC_003");
+    expect(err.details).toEqual({ status: 401 });
+    expect(err.message).toContain("clientSecret");
+  });
+
+  it("is refused to a public client", async () => {
+    const publicAuth = createAuthClient(
+      { issuer: ISSUER, clientId: CLIENT_ID, redirectUri: REDIRECT_URI },
+      { fetch: idp.fetch },
+    );
+    await expectAuthAiError(publicAuth.clientCredentials(), "CFG_001");
+  });
+});
+
+describe("verifyJwt", () => {
+  it("verifies against the provider keys", async () => {
+    const payload = await auth.verifyJwt(await idp.idToken(), {
+      audience: CLIENT_ID,
+    });
+    expect(payload.sub).toBe("user-1");
+  });
+});
+
+describe("fetch", () => {
+  it("defaults to the global fetch, resolved at call time", async () => {
+    const calls: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+      calls.push(String(input));
+      return new Response("{}");
+    }) as typeof fetch;
+    try {
+      const defaultAuth = createAuthClient({
+        issuer: ISSUER,
+        clientId: CLIENT_ID,
+        redirectUri: REDIRECT_URI,
+      });
+      await defaultAuth.fetch("https://example.test/ping");
+      expect(calls).toEqual(["https://example.test/ping"]);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});

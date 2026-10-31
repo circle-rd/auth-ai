@@ -1,5 +1,8 @@
 import { SignJWT, exportJWK, generateKeyPair } from "jose";
 import type { CryptoKey, JWK, JWTPayload } from "jose";
+import { createAuthClient } from "../client.js";
+import type { AuthClient } from "../client.js";
+import type { AuthClientConfig } from "../config.js";
 
 export const ISSUER = "https://idp.test";
 export const CLIENT_ID = "test-app";
@@ -11,9 +14,10 @@ export interface RecordedRequest {
   readonly url: URL;
   readonly headers: Headers;
   readonly form: URLSearchParams;
+  readonly body: string | undefined;
 }
 
-export type TokenHandler = (
+export type RequestHandler = (
   request: RecordedRequest,
 ) => Response | Promise<Response>;
 
@@ -21,7 +25,9 @@ export interface MockIdp {
   readonly fetch: typeof fetch;
   readonly requests: RecordedRequest[];
   readonly metadata: Record<string, unknown>;
-  tokenHandler: TokenHandler;
+  tokenHandler: RequestHandler;
+  /** Serves the REST API below `/api/`. */
+  apiHandler: RequestHandler;
   revocationStatus: number;
   introspection: Record<string, unknown>;
   discoveryFailures: number;
@@ -77,6 +83,8 @@ export async function createMockIdp(): Promise<MockIdp> {
     requests,
     metadata,
     tokenHandler: () => jsonResponse({ error: "server_error" }, 500),
+    apiHandler: () =>
+      jsonResponse({ error: { code: "APP_002", message: "unhandled" } }, 404),
     revocationStatus: 200,
     introspection: { active: false },
     discoveryFailures: 0,
@@ -115,14 +123,20 @@ export async function createMockIdp(): Promise<MockIdp> {
       );
       const headers = new Headers(init?.headers);
       const body = init?.body;
+      const bodyText =
+        typeof body === "string" || body instanceof URLSearchParams
+          ? body.toString()
+          : undefined;
+      const isForm = headers
+        .get("content-type")
+        ?.includes("application/x-www-form-urlencoded");
       const request: RecordedRequest = {
         method: init?.method ?? "GET",
         url,
         headers,
+        body: bodyText,
         form: new URLSearchParams(
-          typeof body === "string" || body instanceof URLSearchParams
-            ? body
-            : undefined,
+          isForm || body instanceof URLSearchParams ? bodyText : undefined,
         ),
       };
       requests.push(request);
@@ -143,9 +157,31 @@ export async function createMockIdp(): Promise<MockIdp> {
         case "/introspect":
           return jsonResponse(idp.introspection);
         default:
-          return new Response("not found", { status: 404 });
+          return url.pathname.startsWith("/api/")
+            ? idp.apiHandler(request)
+            : new Response("not found", { status: 404 });
       }
     },
   };
   return idp;
+}
+
+export function createTestAuth(
+  idp: MockIdp,
+  overrides: Partial<AuthClientConfig> = {},
+): AuthClient {
+  return createAuthClient(
+    {
+      issuer: ISSUER,
+      clientId: CLIENT_ID,
+      clientSecret: CLIENT_SECRET,
+      redirectUri: REDIRECT_URI,
+      ...overrides,
+    },
+    { fetch: idp.fetch },
+  );
+}
+
+export function nowSeconds(): number {
+  return Math.floor(Date.now() / 1000);
 }

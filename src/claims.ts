@@ -4,17 +4,26 @@ const featureValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
 const audienceSchema = z.union([z.string(), z.array(z.string())]);
 
-/**
- * Claims of an ID token issued by auth-service. Unknown claims are kept as is.
- * `roles`, `permissions`, `features`, `plan` and `org_id` only exist when the
- * matching scope was granted.
- */
-export const idTokenClaimsSchema = z.looseObject({
+// Present only when the matching scope was granted.
+const entitlementShape = {
+  roles: z.array(z.string()).optional(),
+  permissions: z.array(z.string()).optional(),
+  features: z.record(z.string(), featureValueSchema).optional(),
+  plan: z.string().optional(),
+  org_id: z.string().optional(),
+};
+
+const registeredShape = {
   iss: z.string(),
   sub: z.string(),
   aud: audienceSchema,
   exp: z.number(),
   iat: z.number(),
+};
+
+/** Claims of an ID token issued by auth-service. Unknown claims are kept as is. */
+export const idTokenClaimsSchema = z.looseObject({
+  ...registeredShape,
   sid: z.string().optional(),
   azp: z.string().optional(),
   name: z.string().optional(),
@@ -26,15 +35,24 @@ export const idTokenClaimsSchema = z.looseObject({
   email: z.string().optional(),
   email_verified: z.boolean().optional(),
   phone_number: z.string().optional(),
-  roles: z.array(z.string()).optional(),
-  permissions: z.array(z.string()).optional(),
-  features: z.record(z.string(), featureValueSchema).optional(),
-  plan: z.string().optional(),
-  org_id: z.string().optional(),
+  ...entitlementShape,
+});
+
+/**
+ * Claims of a JWT access token. `azp` is the OAuth client that obtained the
+ * token and `scope` is a space-separated list.
+ */
+export const accessTokenClaimsSchema = z.looseObject({
+  ...registeredShape,
+  azp: z.string(),
+  scope: z.string().optional(),
+  sid: z.string().optional(),
+  ...entitlementShape,
 });
 
 export type FeatureValue = z.infer<typeof featureValueSchema>;
 export type IdTokenClaims = z.infer<typeof idTokenClaimsSchema>;
+export type AccessTokenClaims = z.infer<typeof accessTokenClaimsSchema>;
 
 export type PermissionAction = "read" | "write";
 

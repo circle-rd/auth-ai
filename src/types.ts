@@ -43,6 +43,12 @@ export interface RefreshOptions {
   readonly resource?: string;
 }
 
+export interface ClientCredentialsOptions {
+  /** Space-separated machine scopes, e.g. `billing:read`. */
+  readonly scope?: string;
+  readonly resource?: string;
+}
+
 export interface LogoutUrlOptions {
   readonly idTokenHint?: string;
   readonly state?: string;

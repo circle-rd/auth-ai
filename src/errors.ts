@@ -15,6 +15,10 @@ const DEFAULT_MESSAGES = {
   OIDC_004: "The identity provider does not support this operation",
   TOK_001: "Token verification failed",
   TOK_002: "No usable grant for this user: sign in again",
+  TOK_003: "Missing or malformed bearer credentials",
+  TOK_004: "Insufficient scope",
+  API_001: "auth-service rejected the request",
+  API_002: "Unexpected response from auth-service",
 } as const;
 
 export type AuthAiErrorCode = keyof typeof DEFAULT_MESSAGES;
@@ -60,7 +64,7 @@ function factory(code: AuthAiErrorCode): ErrorFactory {
 }
 
 // Domain prefixes mirror auth-service: CFG_ configuration, OIDC_ protocol
-// exchanges with the identity provider, TOK_ token and grant handling.
+// exchanges with the identity provider, TOK_ token and grant handling, API_ calls to the auth-service REST API.
 export const ERR = {
   CFG_001: factory("CFG_001"),
   OIDC_001: factory("OIDC_001"),
@@ -69,4 +73,8 @@ export const ERR = {
   OIDC_004: factory("OIDC_004"),
   TOK_001: factory("TOK_001"),
   TOK_002: factory("TOK_002"),
+  TOK_003: factory("TOK_003"),
+  TOK_004: factory("TOK_004"),
+  API_001: factory("API_001"),
+  API_002: factory("API_002"),
 } as const satisfies Record<AuthAiErrorCode, ErrorFactory>;

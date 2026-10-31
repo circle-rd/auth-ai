@@ -2,6 +2,7 @@ import {
   AuthorizationResponseError,
   ClientError,
   ResponseBodyError,
+  WWWAuthenticateChallengeError,
 } from "openid-client";
 import { AuthAiError, ERR } from "./errors.js";
 import type { AuthAiErrorDetails } from "./errors.js";
@@ -34,6 +35,14 @@ export function toAuthAiError(
       details,
       cause: err,
     });
+  }
+
+  // The provider answers 401 with a Basic challenge when client authentication fails.
+  if (err instanceof WWWAuthenticateChallengeError) {
+    return ERR.OIDC_003(
+      `Token endpoint challenged the request (HTTP ${err.status}): check clientId and clientSecret`,
+      { details: { status: err.status }, cause: err },
+    );
   }
 
   if (err instanceof AuthorizationResponseError) {

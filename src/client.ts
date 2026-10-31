@@ -6,6 +6,8 @@ import type { AuthClientConfig, ResolvedAuthClientConfig } from "./config.js";
 import { ERR } from "./errors.js";
 import { introspectionSchema } from "./introspection.js";
 import type { IntrospectionResult } from "./introspection.js";
+import type { JWTPayload } from "jose";
+import type { VerifyJwtOptions } from "./jwt.js";
 import { toAuthAiError } from "./oauth-errors.js";
 import { createProviderLoader } from "./provider.js";
 import type { Provider } from "./provider.js";
@@ -13,6 +15,7 @@ import type {
   LoginHandshake,
   LoginRequest,
   LoginResult,
+  ClientCredentialsOptions,
   LogoutUrlOptions,
   RefreshOptions,
   StartLoginOptions,
@@ -50,10 +53,14 @@ function toTokenSet(response: TokenResponse): TokenSet {
  */
 export class AuthClient {
   readonly config: ResolvedAuthClientConfig;
+  /** The fetch used for every request, shared with the REST API clients built on this one. */
+  readonly fetch: typeof fetch;
   readonly #loadProvider: () => Promise<Provider>;
 
   constructor(config: AuthClientConfig, options: AuthClientOptions = {}) {
     this.config = parseAuthClientConfig(config);
+    this.fetch =
+      options.fetch ?? ((input, init) => globalThis.fetch(input, init));
     this.#loadProvider = createProviderLoader(this.config, options.fetch);
   }
 
@@ -209,6 +216,40 @@ export class AuthClient {
         hint ? { token_type_hint: hint } : undefined,
       );
       return introspectionSchema.parse(response);
+    } catch (err) {
+      throw toAuthAiError(err, "token-request");
+    }
+  }
+
+  /**
+   * Verifies the signature, issuer, audience and expiry of a JWT signed by the
+   * provider. Low-level: prefer the bearer and logout token verifiers.
+   */
+  async verifyJwt(
+    token: string,
+    options: VerifyJwtOptions,
+  ): Promise<JWTPayload> {
+    return (await this.#loadProvider()).verifyJwt(token, options);
+  }
+
+  /**
+   * `client_credentials` grant for the application itself: no user is bound to
+   * the token. Needs a confidential client.
+   */
+  async clientCredentials(
+    options: ClientCredentialsOptions = {},
+  ): Promise<TokenSet> {
+    if (!this.config.clientSecret) {
+      throw ERR.CFG_001("clientCredentials requires a clientSecret");
+    }
+    const { configuration } = await this.#loadProvider();
+    const parameters: Record<string, string> = {};
+    if (options.scope) parameters["scope"] = options.scope;
+    if (options.resource) parameters["resource"] = options.resource;
+    try {
+      return toTokenSet(
+        await oidc.clientCredentialsGrant(configuration, parameters),
+      );
     } catch (err) {
       throw toAuthAiError(err, "token-request");
     }
