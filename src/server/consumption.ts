@@ -13,6 +13,9 @@ const reportSchema = z.object({
   idempotencyKey: z.string().trim().min(1).max(200).optional(),
 });
 
+const WRITE_SCOPE = "consumption:write";
+const READ_SCOPE = "consumption:read";
+
 const aggregateSchema = z.object({ key: z.string(), total: z.string() });
 
 const storedAggregateSchema = aggregateSchema.extend({
@@ -44,17 +47,15 @@ export interface ConsumptionResult {
 
 export type ConsumptionAggregate = z.infer<typeof storedAggregateSchema>;
 
-/** Usage the application reports for its users, for features billed on consumption. */
+/**
+ * Usage the application reports for its users, for features billed on
+ * consumption. The application is the one behind the machine token.
+ */
 export class ConsumptionApi {
   readonly #http: ApiHttp;
-  readonly #applicationId: string;
 
-  constructor(http: ApiHttp, applicationId: string) {
-    if (!z.uuid().safeParse(applicationId).success) {
-      throw ERR.CFG_001("applicationId must be the UUID of the application");
-    }
+  constructor(http: ApiHttp) {
     this.#http = http;
-    this.#applicationId = applicationId;
   }
 
   async report(input: ConsumptionReport): Promise<ConsumptionResult> {
@@ -67,9 +68,15 @@ export class ConsumptionApi {
     }
     const response = await this.#http.request({
       method: "POST",
-      path: "/api/consumption",
-      scope: "",
-      body: { applicationId: this.#applicationId, ...body.data },
+      path: this.#path(body.data.userId),
+      scope: WRITE_SCOPE,
+      body: {
+        key: body.data.key,
+        value: body.data.value,
+        ...(body.data.idempotencyKey === undefined
+          ? {}
+          : { idempotencyKey: body.data.idempotencyKey }),
+      },
       schema: reportResponseSchema,
     });
     return {
@@ -83,7 +90,7 @@ export class ConsumptionApi {
     const { aggregates } = await this.#http.request({
       method: "GET",
       path: this.#path(userId),
-      scope: "",
+      scope: READ_SCOPE,
       schema: z.object({ aggregates: z.array(storedAggregateSchema) }),
     });
     return aggregates;
@@ -94,13 +101,13 @@ export class ConsumptionApi {
     const { aggregate } = await this.#http.request({
       method: "GET",
       path: `${this.#path(userId)}/${encodeURIComponent(key)}`,
-      scope: "",
+      scope: READ_SCOPE,
       schema: z.object({ aggregate: storedAggregateSchema }),
     });
     return aggregate;
   }
 
   #path(userId: string): string {
-    return `/api/consumption/${encodeURIComponent(userId)}/${this.#applicationId}`;
+    return `/api/app/consumption/users/${encodeURIComponent(userId)}`;
   }
 }

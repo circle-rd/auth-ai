@@ -13,8 +13,6 @@ import type { MockIdp, RecordedRequest } from "../test-support/mock-idp.js";
 import { createMachineApi } from "./machine-api.js";
 import type { MachineApi } from "./machine-api.js";
 
-const APPLICATION_ID = "5d1c6b0e-8f0e-4a43-9a52-3b8c2f9d7a10";
-
 let idp: MockIdp;
 let api: MachineApi;
 let issued: number;
@@ -31,9 +29,7 @@ beforeEach(async () => {
     });
   };
   idp.apiHandler = () => jsonResponse({});
-  api = createMachineApi(createTestAuth(idp), {
-    applicationId: APPLICATION_ID,
-  });
+  api = createMachineApi(createTestAuth(idp));
 });
 
 function lastApiRequest(): RecordedRequest {
@@ -196,15 +192,16 @@ describe("consumption", () => {
     });
     const request = lastApiRequest();
     expect(request.method).toBe("POST");
+    expect(request.url.pathname).toBe("/api/app/consumption/users/u1");
     expect(JSON.parse(request.body ?? "")).toEqual({
-      applicationId: APPLICATION_ID,
-      userId: "u1",
       key: "docs",
       value: 2,
       idempotencyKey: "req-1",
     });
     expect(request.headers.get("content-type")).toBe("application/json");
-    expect(idp.requestsTo("/token")[0]?.form.has("scope")).toBe(false);
+    expect(idp.requestsTo("/token")[0]?.form.get("scope")).toBe(
+      "consumption:write",
+    );
   });
 
   it("reports a metered key as such", async () => {
@@ -258,12 +255,13 @@ describe("consumption", () => {
             ],
           });
     expect(await api.consumption.list("u1")).toHaveLength(1);
-    expect(lastApiRequest().url.pathname).toBe(
-      `/api/consumption/u1/${APPLICATION_ID}`,
+    expect(idp.requestsTo("/token").at(-1)?.form.get("scope")).toBe(
+      "consumption:read",
     );
+    expect(lastApiRequest().url.pathname).toBe("/api/app/consumption/users/u1");
     expect((await api.consumption.get("u1", "docs")).total).toBe("12");
     expect(lastApiRequest().url.pathname).toBe(
-      `/api/consumption/u1/${APPLICATION_ID}/docs`,
+      "/api/app/consumption/users/u1/docs",
     );
   });
 
@@ -277,113 +275,5 @@ describe("consumption", () => {
       );
     const err = await rejection(api.consumption.get("u1", "ghost"));
     expect(err.details).toEqual({ status: 404, apiCode: "CONS_003" });
-  });
-
-  it("needs the application id, and a UUID", () => {
-    const auth = createTestAuth(idp);
-    expect(() => createMachineApi(auth).consumption).toThrowError(
-      expect.objectContaining({ code: "CFG_001" }),
-    );
-    expect(
-      () => createMachineApi(auth, { applicationId: "my-app" }).consumption,
-    ).toThrowError(expect.objectContaining({ code: "CFG_001" }));
-  });
-
-  it("builds the consumption client once", () => {
-    expect(api.consumption).toBe(api.consumption);
-  });
-});
-
-describe("wallet", () => {
-  it("reads an account with a bigint balance", async () => {
-    idp.apiHandler = () =>
-      jsonResponse({
-        balance: "9007199254740993",
-        isUnlimited: false,
-        canSpend: true,
-        currency: "eur",
-      });
-    const account = await api.wallet.getAccount("u1");
-    expect(account.balance).toBe(9007199254740993n);
-    expect(idp.requestsTo("/token")[0]?.form.get("scope")).toBe("wallet:read");
-  });
-
-  it("debits an exact amount", async () => {
-    idp.apiHandler = () =>
-      jsonResponse(
-        {
-          transaction: {
-            id: "t1",
-            type: "usage",
-            amount: "1500000",
-            delta: "-1500000",
-            balanceAfter: "-500000",
-            applicationId: null,
-            metadata: { source: "export" },
-            createdAt: "2026-10-31T08:00:00.000Z",
-          },
-          replayed: false,
-        },
-        201,
-      );
-    const result = await api.wallet.recordUsage("u1", {
-      amount: 1_500_000n,
-      idempotencyKey: "job-1",
-      applicationSlug: "my-app",
-      metadata: { source: "export" },
-    });
-    expect(result.replayed).toBe(false);
-    expect(result.transaction.balanceAfter).toBe(-500000n);
-    const request = lastApiRequest();
-    expect(JSON.parse(request.body ?? "")).toEqual({
-      amount: "1500000",
-      idempotencyKey: "job-1",
-      applicationSlug: "my-app",
-      metadata: { source: "export" },
-    });
-    expect(idp.requestsTo("/token")[0]?.form.get("scope")).toBe("wallet:debit");
-  });
-
-  it("sends a dollar cost untouched", async () => {
-    idp.apiHandler = () =>
-      jsonResponse({
-        transaction: {
-          id: "t1",
-          type: "usage",
-          amount: "10",
-          delta: "-10",
-          balanceAfter: "0",
-          applicationId: null,
-          metadata: {},
-          createdAt: "2026-10-31T08:00:00.000Z",
-        },
-        replayed: true,
-      });
-    await api.wallet.recordUsage("u1", {
-      costUsd: "0.0123",
-      idempotencyKey: "k",
-    });
-    expect(JSON.parse(lastApiRequest().body ?? "")).toEqual({
-      costUsd: "0.0123",
-      idempotencyKey: "k",
-    });
-  });
-
-  it.each([
-    ["neither amount nor cost", { idempotencyKey: "k" }],
-    ["both amount and cost", { amount: 1n, costUsd: "1", idempotencyKey: "k" }],
-    ["a zero amount", { amount: 0n, idempotencyKey: "k" }],
-    ["a zero cost", { costUsd: "0.0", idempotencyKey: "k" }],
-    ["a float-looking cost", { costUsd: "1e-3", idempotencyKey: "k" }],
-  ])("rejects %s before any request", async (_label, input) => {
-    const err = await rejection(api.wallet.recordUsage("u1", input));
-    expect(err.code).toBe("CFG_001");
-    expect(idp.requests).toHaveLength(0);
-  });
-
-  it("maps an API error without a standard envelope", async () => {
-    idp.apiHandler = () => new Response("bad gateway", { status: 502 });
-    const err = await rejection(api.wallet.getAccount("u1"));
-    expect(err.details).toEqual({ status: 502 });
   });
 });

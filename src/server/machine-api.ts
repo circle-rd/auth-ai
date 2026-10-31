@@ -4,49 +4,29 @@ import { BillingApi } from "./billing.js";
 import { ConsumptionApi } from "./consumption.js";
 import { ApiHttp } from "./http.js";
 import { MachineTokenProvider } from "./machine-tokens.js";
-import { WalletInternalApi } from "./wallet-internal.js";
 
-export interface MachineApiOptions {
-  /** UUID of the application, shown in the admin interface: required by the consumption API. */
-  readonly applicationId?: string;
-}
+type MachineAuth = Pick<AuthClient, "clientCredentials" | "config" | "fetch">;
 
 /**
  * The auth-service REST API as the application's backend: every call carries a
- * `client_credentials` token minted from the application's own secret.
+ * `client_credentials` token minted from the application's own secret. The
+ * scopes `billing:read`, `consumption:read` and `consumption:write` must be
+ * granted to the application by a superadmin.
  */
 export class MachineApi {
   readonly billing: BillingApi;
-  readonly wallet: WalletInternalApi;
-  readonly #http: ApiHttp;
-  readonly #applicationId: string | undefined;
-  #consumption: ConsumptionApi | undefined;
+  readonly consumption: ConsumptionApi;
 
-  constructor(
-    auth: Pick<AuthClient, "clientCredentials" | "config" | "fetch">,
-    options: MachineApiOptions = {},
-  ) {
+  constructor(auth: MachineAuth) {
     if (!auth.config.clientSecret) {
       throw ERR.CFG_001("The machine API requires a confidential client");
     }
-    this.#http = new ApiHttp(auth, new MachineTokenProvider(auth));
-    this.#applicationId = options.applicationId;
-    this.billing = new BillingApi(this.#http);
-    this.wallet = new WalletInternalApi(this.#http);
-  }
-
-  get consumption(): ConsumptionApi {
-    if (!this.#applicationId) {
-      throw ERR.CFG_001("The consumption API requires `applicationId`");
-    }
-    this.#consumption ??= new ConsumptionApi(this.#http, this.#applicationId);
-    return this.#consumption;
+    const http = new ApiHttp(auth, new MachineTokenProvider(auth));
+    this.billing = new BillingApi(http);
+    this.consumption = new ConsumptionApi(http);
   }
 }
 
-export function createMachineApi(
-  auth: Pick<AuthClient, "clientCredentials" | "config" | "fetch">,
-  options: MachineApiOptions = {},
-): MachineApi {
-  return new MachineApi(auth, options);
+export function createMachineApi(auth: MachineAuth): MachineApi {
+  return new MachineApi(auth);
 }

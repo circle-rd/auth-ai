@@ -20,7 +20,6 @@ export type {
   ReplayStore,
 } from "./backchannel-logout.js";
 export { MachineApi, createMachineApi } from "./machine-api.js";
-export type { MachineApiOptions } from "./machine-api.js";
 export { BillingApi } from "./billing.js";
 export type {
   InvoicePage,
@@ -35,8 +34,6 @@ export type {
   ConsumptionReport,
   ConsumptionResult,
 } from "./consumption.js";
-export { WalletInternalApi } from "./wallet-internal.js";
-export type { WalletUsageInput, WalletUsageResult } from "./wallet-internal.js";
 export {
   bearerChallenge,
   protectedResourceMetadata,
@@ -47,4 +44,3 @@ export type {
   ProtectedResourceMetadata,
   ProtectedResourceMetadataOptions,
 } from "./protected-resource.js";
-export type { WalletAccount, WalletTransaction } from "../wallet-schemas.js";
