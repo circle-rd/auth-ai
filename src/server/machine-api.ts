@@ -2,7 +2,7 @@ import type { AuthClient } from "../client.js";
 import { ERR } from "../errors.js";
 import { BillingApi } from "./billing.js";
 import { ConsumptionApi } from "./consumption.js";
-import { ApiHttp } from "./http.js";
+import { JsonHttp } from "../http.js";
 import { MachineTokenProvider } from "./machine-tokens.js";
 
 type MachineAuth = Pick<AuthClient, "clientCredentials" | "config" | "fetch">;
@@ -21,7 +21,12 @@ export class MachineApi {
     if (!auth.config.clientSecret) {
       throw ERR.CFG_001("The machine API requires a confidential client");
     }
-    const http = new ApiHttp(auth, new MachineTokenProvider(auth));
+    const http = new JsonHttp({
+      baseUrl: auth.config.issuer,
+      fetch: auth.fetch,
+      timeoutMs: auth.config.timeoutMs,
+      tokens: new MachineTokenProvider(auth),
+    });
     this.billing = new BillingApi(http);
     this.consumption = new ConsumptionApi(http);
   }

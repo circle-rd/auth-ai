@@ -185,3 +185,32 @@ export function createTestAuth(
 export function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
+
+export const GATEWAY_URL = "https://llm.test";
+
+export interface MockGateway {
+  readonly requests: Request[];
+  handler: (request: Request) => Response | Promise<Response>;
+}
+
+/** Serves the identity provider and the gateway from one `fetch`, by origin. */
+export function createCombinedFetch(
+  idp: MockIdp,
+  gateway: MockGateway,
+): typeof fetch {
+  return async (input, init) => {
+    const request = new Request(input, init);
+    if (new URL(request.url).origin === GATEWAY_URL) {
+      gateway.requests.push(request.clone());
+      return gateway.handler(request);
+    }
+    return idp.fetch(input, init);
+  };
+}
+
+export function createMockGateway(): MockGateway {
+  return {
+    requests: [],
+    handler: () => jsonResponse({ error: { message: "unhandled" } }, 404),
+  };
+}

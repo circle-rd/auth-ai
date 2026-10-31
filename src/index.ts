@@ -45,3 +45,32 @@ export type {
   TokenSet,
   TokenTypeHint,
 } from "./types.js";
+export { AiClient, UserAi, createAiClient } from "./ai.js";
+export type { AiClientOptions } from "./ai.js";
+export { GatewayClient } from "./gateway.js";
+export type {
+  GatewayAgent,
+  GatewayClientOptions,
+  GatewayMcpServer,
+  GatewayModel,
+  GatewayTokens,
+} from "./gateway.js";
+export {
+  isInsufficientCredit,
+  isInsufficientCreditStatus,
+  toGatewayError,
+} from "./gateway-errors.js";
+export { MICRO_PER_EUR, WalletClient, formatEuros } from "./wallet.js";
+export type {
+  ListTransactionsOptions,
+  TopupOptions,
+  WalletAccount,
+  WalletSessionUsage,
+  WalletSessionUsageOptions,
+  WalletStats,
+  WalletStatsOptions,
+  WalletTransaction,
+  WalletTransactionPage,
+  WalletTransactionType,
+} from "./wallet.js";
+export { WALLET_SELF_SCOPE } from "./config.js";

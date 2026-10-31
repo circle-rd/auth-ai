@@ -150,6 +150,11 @@ export class GrantManager {
     });
   }
 
+  /** Drops a cached access token the API refused, so the next call mints a fresh one. */
+  invalidate(grantId: string, resource?: string): void {
+    this.#cache.delete(cacheKey(grantId, resource));
+  }
+
   /** Revokes the refresh token at the provider, then forgets the grant. */
   async revoke(grantId: string): Promise<void> {
     await this.#lock.run(grantId, async () => {

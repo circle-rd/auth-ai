@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ApiHttp } from "./http.js";
+import type { JsonHttp } from "../http.js";
 
 const SCOPE = "billing:read";
 
@@ -69,9 +69,9 @@ const subscriptionResponseSchema = z.object({
  * the one behind the machine token: it cannot read another one.
  */
 export class BillingApi {
-  readonly #http: ApiHttp;
+  readonly #http: JsonHttp;
 
-  constructor(http: ApiHttp) {
+  constructor(http: JsonHttp) {
     this.#http = http;
   }
 

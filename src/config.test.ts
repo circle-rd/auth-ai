@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SCOPES, parseAuthClientConfig } from "./config.js";
+import {
+  DEFAULT_SCOPES,
+  WALLET_SELF_SCOPE,
+  parseAuthClientConfig,
+} from "./config.js";
 import { AuthAiError } from "./errors.js";
 
 const valid = {
@@ -50,6 +54,7 @@ describe("parseAuthClientConfig", () => {
     ],
     ["scopes without openid", { scopes: ["profile"] }],
     ["a non-URL resource", { resources: ["not a url"] }],
+    ["a non-URL redirect URI", { redirectUri: "not a url" }],
     ["an empty client id", { clientId: "" }],
     ["an unknown auth method", { tokenEndpointAuthMethod: "none" }],
   ])("rejects %s", (_label, override) => {
@@ -64,5 +69,56 @@ describe("parseAuthClientConfig", () => {
     expect(err.message).toContain("clientId");
     expect(err.message).toContain("redirectUri");
     expect(err.message).not.toContain("super-secret-value");
+  });
+});
+
+describe("gatewayUrl", () => {
+  const gatewayUrl = "https://llm.example.com";
+
+  it("adds the gateway and auth-service audiences and the wallet scope", () => {
+    const config = parseAuthClientConfig({
+      ...valid,
+      resources: ["https://app.example.com"],
+      gatewayUrl,
+    });
+    expect(config.resources).toEqual([
+      "https://app.example.com",
+      gatewayUrl,
+      valid.issuer,
+    ]);
+    expect(config.scopes).toContain(WALLET_SELF_SCOPE);
+    expect(config.scopes).toEqual([...DEFAULT_SCOPES, WALLET_SELF_SCOPE]);
+  });
+
+  it("does not duplicate what the application already listed", () => {
+    const config = parseAuthClientConfig({
+      ...valid,
+      resources: [gatewayUrl, valid.issuer],
+      scopes: ["openid", WALLET_SELF_SCOPE],
+      gatewayUrl,
+    });
+    expect(config.resources).toEqual([gatewayUrl, valid.issuer]);
+    expect(config.scopes).toEqual(["openid", WALLET_SELF_SCOPE]);
+  });
+
+  it("leaves scopes and resources alone without a gateway", () => {
+    const config = parseAuthClientConfig(valid);
+    expect(config.scopes).not.toContain(WALLET_SELF_SCOPE);
+    expect(config.resources).toEqual([]);
+    expect(config.gatewayUrl).toBeUndefined();
+  });
+
+  it.each(["https://llm.example.com/", "ftp://llm.example.com", "llm"])(
+    "rejects %s",
+    (value) => {
+      expect(rejection({ ...valid, gatewayUrl: value }).code).toBe("CFG_001");
+    },
+  );
+
+  it("accepts a loopback gateway over http for local development", () => {
+    expect(
+      parseAuthClientConfig({ ...valid, gatewayUrl: "http://localhost:4000" })
+        .gatewayUrl,
+    ).toBe("http://localhost:4000");
   });
 });

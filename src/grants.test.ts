@@ -167,6 +167,23 @@ describe("GrantManager.getAccessToken", () => {
   });
 });
 
+describe("GrantManager.invalidate", () => {
+  it("forces the next call to mint a fresh token for that resource only", async () => {
+    const { refresh, manager } = setup();
+    await manager.save("u1", "refresh-0");
+    refresh.mockResolvedValue(tokenSet());
+    await manager.getAccessToken("u1", { resource: "a" });
+    await manager.getAccessToken("u1", { resource: "b" });
+    expect(refresh).toHaveBeenCalledTimes(2);
+
+    manager.invalidate("u1", "a");
+    await manager.getAccessToken("u1", { resource: "a" });
+    await manager.getAccessToken("u1", { resource: "b" });
+
+    expect(refresh).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe("GrantManager.save and revoke", () => {
   it("forgets cached tokens when a new sign-in replaces the grant", async () => {
     const { refresh, manager } = setup();

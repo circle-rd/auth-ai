@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ERR } from "../errors.js";
-import type { ApiHttp } from "./http.js";
+import type { JsonHttp } from "../http.js";
 
 const reportSchema = z.object({
   userId: z.string().min(1),
@@ -52,9 +52,9 @@ export type ConsumptionAggregate = z.infer<typeof storedAggregateSchema>;
  * consumption. The application is the one behind the machine token.
  */
 export class ConsumptionApi {
-  readonly #http: ApiHttp;
+  readonly #http: JsonHttp;
 
-  constructor(http: ApiHttp) {
+  constructor(http: JsonHttp) {
     this.#http = http;
   }
 
