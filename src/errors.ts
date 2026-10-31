@@ -9,6 +9,12 @@ export interface AuthAiErrorOptions {
 
 const DEFAULT_MESSAGES = {
   CFG_001: "Invalid SDK configuration",
+  OIDC_001: "Identity provider discovery failed",
+  OIDC_002: "Invalid authorization response",
+  OIDC_003: "Token request failed",
+  OIDC_004: "The identity provider does not support this operation",
+  TOK_001: "Token verification failed",
+  TOK_002: "No usable grant for this user: sign in again",
 } as const;
 
 export type AuthAiErrorCode = keyof typeof DEFAULT_MESSAGES;
@@ -53,7 +59,14 @@ function factory(code: AuthAiErrorCode): ErrorFactory {
     new AuthAiError(code, message, options);
 }
 
-// Domain prefixes mirror auth-service: CFG_ is configuration.
+// Domain prefixes mirror auth-service: CFG_ configuration, OIDC_ protocol
+// exchanges with the identity provider, TOK_ token and grant handling.
 export const ERR = {
   CFG_001: factory("CFG_001"),
+  OIDC_001: factory("OIDC_001"),
+  OIDC_002: factory("OIDC_002"),
+  OIDC_003: factory("OIDC_003"),
+  OIDC_004: factory("OIDC_004"),
+  TOK_001: factory("TOK_001"),
+  TOK_002: factory("TOK_002"),
 } as const satisfies Record<AuthAiErrorCode, ErrorFactory>;
