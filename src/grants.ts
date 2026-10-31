@@ -1,6 +1,7 @@
 import { ERR } from "./errors.js";
 import { isInvalidGrant } from "./oauth-errors.js";
 import type { AuthClient } from "./client.js";
+import type { TokenSet } from "./types.js";
 
 /**
  * Persists the single refresh-token chain of a user. The provider rotates it
@@ -121,26 +122,10 @@ export class GrantManager {
       const refreshed = this.#cached(key);
       if (refreshed) return refreshed;
 
-      const refreshToken = await this.#store.get(grantId);
-      if (refreshToken === undefined) throw ERR.TOK_002();
-
-      let tokens;
-      try {
-        tokens = await this.#auth.refresh(
-          refreshToken,
-          options.resource ? { resource: options.resource } : {},
-        );
-      } catch (err) {
-        if (isInvalidGrant(err)) {
-          await this.#store.delete(grantId);
-          this.#forget(grantId);
-          throw ERR.TOK_002(undefined, { cause: err });
-        }
-        throw err;
-      }
-
-      // Providers may omit the refresh token when they do not rotate it.
-      await this.#store.set(grantId, tokens.refreshToken ?? refreshToken);
+      const tokens = await this.#rotate(
+        grantId,
+        options.resource ? { resource: options.resource } : {},
+      );
       const token = {
         accessToken: tokens.accessToken,
         expiresAt: tokens.expiresAt,
@@ -148,6 +133,15 @@ export class GrantManager {
       this.#cache.set(key, token);
       return token;
     });
+  }
+
+  /**
+   * Refreshes without narrowing to a resource and returns the whole token set,
+   * ID token included: the way to renew the claims of a session. The rotated
+   * refresh token is stored. Failures are those of `getAccessToken`.
+   */
+  async refreshTokens(grantId: string): Promise<TokenSet> {
+    return this.#lock.run(grantId, () => this.#rotate(grantId, {}));
   }
 
   /** Drops a cached access token the API refused, so the next call mints a fresh one. */
@@ -169,6 +163,30 @@ export class GrantManager {
         this.#forget(grantId);
       }
     });
+  }
+
+  /** One refresh under the grant lock the caller already holds. */
+  async #rotate(
+    grantId: string,
+    options: { readonly resource?: string },
+  ): Promise<TokenSet> {
+    const refreshToken = await this.#store.get(grantId);
+    if (refreshToken === undefined) throw ERR.TOK_002();
+
+    let tokens: TokenSet;
+    try {
+      tokens = await this.#auth.refresh(refreshToken, options);
+    } catch (err) {
+      if (isInvalidGrant(err)) {
+        await this.#store.delete(grantId);
+        this.#forget(grantId);
+        throw ERR.TOK_002(undefined, { cause: err });
+      }
+      throw err;
+    }
+    // Providers may omit the refresh token when they do not rotate it.
+    await this.#store.set(grantId, tokens.refreshToken ?? refreshToken);
+    return tokens;
   }
 
   #cached(key: string): AccessToken | undefined {

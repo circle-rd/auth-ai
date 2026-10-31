@@ -31,6 +31,14 @@
     "./server": {
       "types": "./dist/server/index.d.ts",
       "default": "./dist/server/index.js"
+    },
+    "./web": {
+      "types": "./dist/web/index.d.ts",
+      "default": "./dist/web/index.js"
+    },
+    "./fastify": {
+      "types": "./dist/fastify/index.d.ts",
+      "default": "./dist/fastify/index.js"
     }
   },
   "files": [
@@ -53,6 +61,7 @@
     "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
+    "fastify": "^5.12.7",
     "prettier": "^3.9.9",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.0",
@@ -62,5 +71,13 @@
     "jose": "^6.2.14",
     "openid-client": "^6.8.8",
     "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "fastify": ">=5.12.6"
+  },
+  "peerDependenciesMeta": {
+    "fastify": {
+      "optional": true
+    }
   }
 }

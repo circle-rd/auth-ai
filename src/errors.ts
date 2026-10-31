@@ -24,6 +24,11 @@ const DEFAULT_MESSAGES = {
   GW_003: "The gateway refused the credentials or the resource",
   GW_004: "The gateway is temporarily unavailable",
   GW_005: "Unexpected response from the gateway",
+  SES_001: "Not signed in",
+  SES_002: "The sign-in attempt is missing, expired or was tampered with",
+  SES_003: "The ID token carries no session id (sid)",
+  SES_004: "Cross-origin request refused",
+  SRV_001: "Internal error",
 } as const;
 
 export type AuthAiErrorCode = keyof typeof DEFAULT_MESSAGES;
@@ -70,7 +75,8 @@ function factory(code: AuthAiErrorCode): ErrorFactory {
 
 // Domain prefixes mirror auth-service: CFG_ configuration, OIDC_ protocol
 // exchanges with the identity provider, TOK_ token and grant handling, API_ calls to the auth-service REST API,
-// GW_ calls to the LiteLLM gateway.
+// GW_ calls to the LiteLLM gateway, SES_ browser sessions, SRV_ unexpected
+// failures of the SDK's own HTTP handlers.
 export const ERR = {
   CFG_001: factory("CFG_001"),
   OIDC_001: factory("OIDC_001"),
@@ -88,4 +94,9 @@ export const ERR = {
   GW_003: factory("GW_003"),
   GW_004: factory("GW_004"),
   GW_005: factory("GW_005"),
+  SES_001: factory("SES_001"),
+  SES_002: factory("SES_002"),
+  SES_003: factory("SES_003"),
+  SES_004: factory("SES_004"),
+  SRV_001: factory("SRV_001"),
 } as const satisfies Record<AuthAiErrorCode, ErrorFactory>;
