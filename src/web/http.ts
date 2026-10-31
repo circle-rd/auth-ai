@@ -13,9 +13,20 @@ const STATUS_BY_CODE: Partial<Record<AuthAiErrorCode, number>> = {
   OIDC_001: 502,
   OIDC_003: 502,
   OIDC_004: 501,
+  API_001: 502,
+  API_002: 502,
+  GW_001: 402,
+  GW_002: 429,
+  GW_003: 403,
+  GW_004: 503,
+  GW_005: 502,
 };
 
 export const NO_STORE = { "cache-control": "no-store" } as const;
+
+// Wallet amounts are bigint micro-euros: they travel as integer strings.
+const bigintToString = (_key: string, value: unknown): unknown =>
+  typeof value === "bigint" ? value.toString() : value;
 
 export function jsonResponse(
   body: unknown,
@@ -24,7 +35,10 @@ export function jsonResponse(
 ): Response {
   headers.set("content-type", "application/json");
   headers.set("cache-control", "no-store");
-  return new Response(JSON.stringify(body), { status, headers });
+  return new Response(JSON.stringify(body, bigintToString), {
+    status,
+    headers,
+  });
 }
 
 export function redirectResponse(

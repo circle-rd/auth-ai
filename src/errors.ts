@@ -33,6 +33,10 @@ const DEFAULT_MESSAGES = {
 
 export type AuthAiErrorCode = keyof typeof DEFAULT_MESSAGES;
 
+export function isAuthAiErrorCode(value: unknown): value is AuthAiErrorCode {
+  return typeof value === "string" && Object.hasOwn(DEFAULT_MESSAGES, value);
+}
+
 /**
  * Every failure raised by the SDK. `details` must never carry tokens, secrets
  * or other credentials: it is meant to be logged and serialised.

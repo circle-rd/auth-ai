@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AiClient } from "../ai.js";
 import type { AuthClient } from "../client.js";
 import type { IdTokenClaims } from "../claims.js";
 import { AuthAiError, ERR } from "../errors.js";
@@ -22,6 +23,7 @@ import {
   redirectResponse,
   safeRedirectPath,
 } from "./http.js";
+import { createAiRoutes } from "./ai-routes.js";
 import { deriveSealKey, seal, unseal } from "./seal.js";
 import type { Session, SessionStore } from "./sessions.js";
 
@@ -65,6 +67,8 @@ export interface AuthHandlersOptions {
   readonly requireProviderSession?: boolean;
   /** Redirect target of a failed sign-in, with `?error=<code>`; JSON when unset. */
   readonly errorRedirect?: string;
+  /** Adds `/wallet`, `/wallet/stats` and `/models` for the frontend, read with the user's tokens. */
+  readonly ai?: AiClient;
   readonly replayStore?: ReplayStore;
   /** Called after sessions end (sign-out or back-channel logout): close sockets, drop caches. */
   readonly onSessionsEnded?: (
@@ -190,6 +194,12 @@ export async function createAuthHandlers(
       renewing.set(session.id, pending);
     }
     return pending;
+  }
+
+  async function requireSession(request: Request): Promise<Session> {
+    const session = await getSession(request);
+    if (!session) throw ERR.SES_001();
+    return session;
   }
 
   /** Ends sessions, and revokes the grant of every user left with none. */
@@ -369,16 +379,18 @@ export async function createAuthHandlers(
     "/logout": { method: "POST", run: logout },
     "/backchannel-logout": { method: "POST", run: backchannelLogout },
   };
+  if (options.ai) {
+    const aiRoutes = createAiRoutes(options.ai, requireSession);
+    for (const [path, run] of Object.entries(aiRoutes)) {
+      routes[path] = { method: "GET", run };
+    }
+  }
 
   return {
     origin,
     basePath,
     getSession,
-    async requireSession(request) {
-      const session = await getSession(request);
-      if (!session) throw ERR.SES_001();
-      return session;
-    },
+    requireSession,
     async handle(request) {
       const { pathname } = new URL(request.url);
       if (!pathname.startsWith(`${basePath}/`)) return null;

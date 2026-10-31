@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createAiClient } from "../ai.js";
+import { createAuthClient } from "../client.js";
 import { GrantManager, MemoryGrantStore } from "../grants.js";
 import {
   CLIENT_ID,
+  CLIENT_SECRET,
+  GATEWAY_URL,
   ISSUER,
   createMockIdp,
   createTestAuth,
@@ -722,5 +726,113 @@ describe("routing and configuration", () => {
     expect(response.status).toBe(500);
     expect(JSON.stringify(await response.json())).not.toContain("hunter2");
     expect(onError).toHaveBeenCalledOnce();
+  });
+});
+
+describe("frontend data routes", () => {
+  const account = {
+    balance: "9007199254740993",
+    isUnlimited: false,
+    canSpend: true,
+    currency: "eur",
+  };
+
+  async function buildWithAi(): Promise<void> {
+    const auth = createAuthClient(
+      {
+        issuer: ISSUER,
+        clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET,
+        redirectUri: `${ORIGIN}/auth/callback`,
+        gatewayUrl: GATEWAY_URL,
+      },
+      {
+        fetch: async (input, init) => {
+          const request = new Request(input, init);
+          return new URL(request.url).origin === GATEWAY_URL
+            ? jsonResponse({ data: [{ id: "gpt-4o-mini" }] })
+            : idp.fetch(input, init);
+        },
+      },
+    );
+    grants = new GrantManager({ auth, store: new MemoryGrantStore() });
+    handlers = await createAuthHandlers({
+      auth,
+      grants,
+      sessions,
+      secret: SECRET,
+      ai: createAiClient({ auth, grants }),
+    });
+  }
+
+  it("serves the wallet of the signed-in user with the top-up link", async () => {
+    await buildWithAi();
+    const cookie = await signIn();
+    idp.apiHandler = () => jsonResponse(account);
+
+    const response = await mustHandle(withSession(cookie, {}, "/auth/wallet"));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      ...account,
+      topupUrl: `${ISSUER}/profile`,
+    });
+    expect(idp.requests.at(-1)?.headers.get("authorization")).toBe(
+      `Bearer access-r1`,
+    );
+  });
+
+  it("serves the spend statistics and validates the window", async () => {
+    await buildWithAi();
+    const cookie = await signIn();
+    idp.apiHandler = (request) =>
+      jsonResponse({
+        days: Number(request.url.searchParams.get("days") ?? 30),
+        total: "0",
+        notBilled: "0",
+        calls: 0,
+        series: [],
+        byApplication: [],
+        byKind: [],
+        byModel: [],
+        daily: [],
+      });
+
+    const ok = await mustHandle(
+      withSession(cookie, {}, "/auth/wallet/stats?days=7"),
+    );
+    expect(((await ok.json()) as { days: number }).days).toBe(7);
+
+    for (const days of ["0", "91", "x", "1.5"]) {
+      expect(
+        (
+          await mustHandle(
+            withSession(cookie, {}, `/auth/wallet/stats?days=${days}`),
+          )
+        ).status,
+      ).toBe(500);
+    }
+  });
+
+  it("lists the gateway models", async () => {
+    await buildWithAi();
+    const cookie = await signIn();
+    const response = await mustHandle(withSession(cookie, {}, "/auth/models"));
+    expect(
+      ((await response.json()) as { models: { id: string }[] }).models[0]?.id,
+    ).toBe("gpt-4o-mini");
+  });
+
+  it("requires a session", async () => {
+    await buildWithAi();
+    expect((await mustHandle(get("/auth/wallet"))).status).toBe(401);
+    expect((await mustHandle(get("/auth/models"))).status).toBe(401);
+  });
+
+  it("does not exist unless an AI client was provided", async () => {
+    const cookie = await signIn();
+    expect(
+      await handlers.handle(withSession(cookie, {}, "/auth/wallet")),
+    ).toBeNull();
   });
 });
