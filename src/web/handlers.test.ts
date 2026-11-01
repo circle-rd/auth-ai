@@ -271,10 +271,13 @@ describe("callback", () => {
 
   it("refuses a callback without the handshake cookie", async () => {
     const response = await mustHandle(get("/auth/callback?code=abc&state=x"));
-    expect(response.status).toBe(400);
-    expect(
-      ((await response.json()) as { error: { code: string } }).error.code,
-    ).toBe("SES_002");
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({
+      error: { code: "SES_005", message: "Sign-in failed" },
+    });
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "SES_002" }),
+    );
     expect(idp.requestsTo("/token")).toHaveLength(0);
   });
 
@@ -286,7 +289,7 @@ describe("callback", () => {
         cookie: cookieHeader([LOGIN_COOKIE, `${sealed.slice(0, -3)}AAA`]),
       }),
     );
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(403);
   });
 
   it("refuses a callback whose state is not the one of this browser", async () => {
@@ -302,7 +305,7 @@ describe("callback", () => {
         },
       ),
     );
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(403);
     expect(idp.requestsTo("/token")).toHaveLength(0);
     expect(onError).toHaveBeenCalled();
     expect(await sessions.countByUser("user-1")).toBe(0);
@@ -333,11 +336,45 @@ describe("callback", () => {
         },
       ),
     );
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(403);
     expect(
       ((await response.json()) as { error: { code: string } }).error.code,
-    ).toBe("SES_003");
+    ).toBe("SES_005");
+    // The misconfiguration is for the application's logs, not for the browser.
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "SES_003" }),
+    );
     expect(await grants.has("user-1")).toBe(false);
+  });
+
+  it("answers the same 403 whatever failed, so a probe learns nothing", async () => {
+    const login = await mustHandle(get("/auth/login"));
+    const authorize = new URL(login.headers.get("location") ?? "");
+    const cookie = cookieHeader([
+      LOGIN_COOKIE,
+      cookiesOf(login).get(LOGIN_COOKIE) ?? "",
+    ]);
+    const callback = `/auth/callback?code=abc&state=${authorize.searchParams.get("state")}&iss=${encodeURIComponent(ISSUER)}`;
+    const answers: string[] = [];
+    for (const rejected of [
+      { error: "invalid_client" },
+      { error: "invalid_grant", error_description: "code expired" },
+      { error: "server_error" },
+    ]) {
+      idp.tokenHandler = () => jsonResponse(rejected, 401);
+      const response = await mustHandle(get(callback, { cookie }));
+      answers.push(`${response.status} ${await response.text()}`);
+    }
+    answers.push(
+      `${(await mustHandle(get("/auth/callback?error=access_denied"))).status}`,
+    );
+    expect(answers.slice(0, 3)).toEqual(
+      Array(3).fill(
+        `403 ${JSON.stringify({ error: { code: "SES_005", message: "Sign-in failed" } })}`,
+      ),
+    );
+    expect(answers[3]).toBe("403");
+    expect(onError).toHaveBeenCalledTimes(4);
   });
 
   it("redirects to the error page when one is configured", async () => {
@@ -347,7 +384,7 @@ describe("callback", () => {
     );
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe(
-      "/signin-error?error=SES_002",
+      "/signin-error?error=SES_005",
     );
   });
 

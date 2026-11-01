@@ -5,6 +5,7 @@ const STATUS_BY_CODE: Partial<Record<AuthAiErrorCode, number>> = {
   SES_001: 401,
   SES_002: 400,
   SES_004: 403,
+  SES_005: 403,
   TOK_001: 401,
   TOK_002: 401,
   TOK_003: 401,

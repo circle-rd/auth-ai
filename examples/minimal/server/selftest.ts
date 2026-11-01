@@ -252,5 +252,27 @@ export async function runSelfTest(
     return { reported, storedTotal: stored.total };
   });
 
+  await run("consumption-metered-feature", async () => {
+    const { features } = await machine.billing.getUsage(userId);
+    const feature = features[0];
+    if (!feature) throw new Error("the plan prices no metered feature");
+    const reported = await machine.consumption.report({
+      userId,
+      key: feature.featureKey,
+      value: 1,
+      idempotencyKey: `${usageSessionId}-metered`,
+    });
+    const after = (await machine.billing.getUsage(userId)).features.find(
+      (item) => item.featureKey === feature.featureKey,
+    );
+    return {
+      featureKey: feature.featureKey,
+      metered: reported.metered,
+      usedBefore: feature.used,
+      usedAfter: after?.used,
+      limit: feature.usageLimit,
+    };
+  });
+
   return results;
 }

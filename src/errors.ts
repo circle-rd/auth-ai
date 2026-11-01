@@ -28,6 +28,7 @@ const DEFAULT_MESSAGES = {
   SES_002: "The sign-in attempt is missing, expired or was tampered with",
   SES_003: "Sign-in could not be completed",
   SES_004: "Cross-origin request refused",
+  SES_005: "Sign-in failed",
   SRV_001: "Internal error",
 } as const;
 
@@ -111,5 +112,6 @@ export const ERR = {
   SES_002: factory("SES_002"),
   SES_003: factory("SES_003"),
   SES_004: factory("SES_004"),
+  SES_005: factory("SES_005"),
   SRV_001: factory("SRV_001"),
 } as const satisfies Record<AuthAiErrorCode, ErrorFactory>;

@@ -313,18 +313,20 @@ export async function createAuthHandlers(
         ),
       );
     } catch (err) {
+      // Whatever failed (state, code, client credentials, claims), the browser
+      // learns one thing: the sign-in failed. Telling a rejected client secret
+      // from a forged state would help whoever probes the callback; the cause
+      // reaches the application's logs.
+      options.onError?.(err);
+      const failure = ERR.SES_005(undefined, { cause: err });
       if (options.errorRedirect) {
-        options.onError?.(err);
-        const code = err instanceof AuthAiError ? err.code : "SRV_001";
         return redirectResponse(
-          `${options.errorRedirect}?error=${encodeURIComponent(code)}`,
+          `${options.errorRedirect}?error=${failure.code}`,
           303,
           withCookies(clear),
         );
       }
-      // Failed sign-ins are worth logging: the response only says what the user may know.
-      if (err instanceof AuthAiError) options.onError?.(err);
-      return errorResponse(err, options.onError, withCookies(clear));
+      return errorResponse(failure, undefined, withCookies(clear));
     }
   }
 
