@@ -50,6 +50,14 @@ Register `https://app.example.com/auth/backchannel-logout` as the application's
 back-channel logout URI, and enable end-session on it: the sign-in refuses an
 ID token without `sid`.
 
+## Errors
+
+Every failure is an `AuthAiError` with a stable `code` (`OIDC_003`, `TOK_004`,
+`GW_001`…). Its `message` and `details` carry what a developer needs (a
+provider's description, the scope asked for) and belong in your logs. The
+handlers answer browsers with `toPublicJSON()` only: the code and a generic
+message, never the detail. Do the same in your own routes.
+
 ## Development
 
 Requires Node.js 22 and pnpm (the version is pinned by `packageManager`).

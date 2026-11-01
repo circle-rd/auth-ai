@@ -121,7 +121,8 @@ const settle = async <T>(run: () => Promise<T>) =>
     (data) => ({ ok: true as const, data }),
     (err: unknown) => ({
       ok: false as const,
-      error: err instanceof AuthAiError ? err.toJSON() : { message: "failed" },
+      error:
+        err instanceof AuthAiError ? err.toPublicJSON() : { message: "failed" },
     }),
   );
 
@@ -134,7 +135,7 @@ function gatewayOf(request: FastifyRequest) {
 function replyWithError(reply: FastifyReply, err: unknown) {
   if (err instanceof AuthAiError) {
     const status = err.code === "GW_001" ? 402 : 502;
-    return reply.status(status).send({ error: err.toJSON() });
+    return reply.status(status).send({ error: err.toPublicJSON() });
   }
   throw err;
 }
@@ -215,9 +216,13 @@ app.post("/api/selftest", { preHandler: protect }, async (request) => {
     gatewayUrl: config.GATEWAY_URL,
     session,
   });
-  // Read from the container logs: the report holds no token or secret.
+  // The log keeps the detailed report for the developer; the browser gets the codes.
   app.log.info({ selftest: { user: session.userId, checks } }, "self-test");
-  return { checks };
+  return {
+    checks: checks.map(({ error, ...rest }) =>
+      error ? { ...rest, error: { code: error.code } } : rest,
+    ),
+  };
 });
 
 // A Bearer-protected route, to exercise token verification and the challenge.
@@ -238,7 +243,7 @@ app.get("/api/bearer", async (request, reply) => {
           error: "invalid_token",
         }),
       )
-      .send({ error: err.toJSON() });
+      .send({ error: err.toPublicJSON() });
   }
 });
 

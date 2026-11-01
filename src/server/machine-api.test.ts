@@ -110,7 +110,7 @@ describe("machine tokens", () => {
 });
 
 describe("machine scope not granted", () => {
-  it("explains who can grant the scope", async () => {
+  it("names the scope in the details only, never in the message", async () => {
     idp.tokenHandler = () =>
       jsonResponse(
         {
@@ -121,8 +121,9 @@ describe("machine scope not granted", () => {
       );
     const err = await rejection(api.billing.getUsage("u1"));
     expect(err.code).toBe("TOK_004");
-    expect(err.message).toContain("superadmin");
+    expect(err.message).toBe("Insufficient scope");
     expect(err.details).toEqual({ scope: "billing:read" });
+    expect(JSON.stringify(err.toPublicJSON())).not.toContain("billing");
     expect(
       idp.requests.filter((r) => r.url.pathname.startsWith("/api/")),
     ).toHaveLength(0);

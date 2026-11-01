@@ -34,15 +34,12 @@ export class MachineTokenProvider {
     const request = this.#auth
       .clientCredentials({ scope })
       .catch((err: unknown) => {
-        // The provider only names the scope: say who can grant it.
+        // The scope goes in `details` (for logs); the message stays generic.
         if (
           err instanceof AuthAiError &&
           err.details?.["oauthError"] === "invalid_scope"
         ) {
-          throw ERR.TOK_004(
-            `The application is not granted the machine scope "${scope}": a superadmin must add it to the application's machine scopes`,
-            { details: { scope }, cause: err },
-          );
+          throw ERR.TOK_004(undefined, { details: { scope }, cause: err });
         }
         throw err;
       })

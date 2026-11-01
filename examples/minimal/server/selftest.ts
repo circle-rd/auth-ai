@@ -106,6 +106,8 @@ export async function runSelfTest(
       rotated: tokens.refreshToken !== undefined,
       scope: tokens.scope,
       rolesInRenewedClaims: claims?.roles,
+      planInRenewedClaims: claims?.plan,
+      featuresInRenewedClaims: claims?.features,
     };
   });
 
@@ -185,7 +187,7 @@ export async function runSelfTest(
     if (!chatModel) throw new Error("no model matching /lagarde/ in the plan");
     const answer = await user.gateway.postJson("/v1/chat/completions", {
       model: chatModel,
-      max_tokens: 64,
+      max_tokens: 512,
       messages: [{ role: "user", content: "Reply with the single word: pong" }],
       metadata: { session_id: usageSessionId },
     });

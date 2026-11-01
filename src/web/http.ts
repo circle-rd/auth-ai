@@ -53,7 +53,8 @@ export function redirectResponse(
 
 /**
  * Serialises a failure as the same `{ error: { code, message } }` envelope
- * auth-service uses. The message of an SDK error carries no credential; any
+ * auth-service uses, with the code and a generic message only: the detailed
+ * message and the details stay in the error, for the application's logs. Any
  * other failure is reported to `onError` and answered generically.
  */
 export function errorResponse(
@@ -62,16 +63,14 @@ export function errorResponse(
   headers?: Headers,
 ): Response {
   if (err instanceof AuthAiError) {
-    const { code, message } = err.toJSON();
     return jsonResponse(
-      { error: { code, message } },
+      { error: err.toPublicJSON() },
       STATUS_BY_CODE[err.code] ?? 500,
       headers,
     );
   }
   onError?.(err);
-  const { code, message } = ERR.SRV_001().toJSON();
-  return jsonResponse({ error: { code, message } }, 500, headers);
+  return jsonResponse({ error: ERR.SRV_001().toPublicJSON() }, 500, headers);
 }
 
 // Control characters and backslashes make browsers read a "path" as another host.

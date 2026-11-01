@@ -26,7 +26,7 @@ const DEFAULT_MESSAGES = {
   GW_005: "Unexpected response from the gateway",
   SES_001: "Not signed in",
   SES_002: "The sign-in attempt is missing, expired or was tampered with",
-  SES_003: "The ID token carries no session id (sid)",
+  SES_003: "Sign-in could not be completed",
   SES_004: "Cross-origin request refused",
   SRV_001: "Internal error",
 } as const;
@@ -54,6 +54,15 @@ export class AuthAiError extends Error {
     this.name = "AuthAiError";
     this.code = code;
     this.details = options.details;
+  }
+
+  /**
+   * What may reach an end user: the code and the registry's generic message.
+   * `message` and `details` carry what a developer needs (a provider's
+   * description, a scope name) and belong in logs, not in responses.
+   */
+  toPublicJSON(): { code: AuthAiErrorCode; message: string } {
+    return { code: this.code, message: DEFAULT_MESSAGES[this.code] };
   }
 
   toJSON(): {

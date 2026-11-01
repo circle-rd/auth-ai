@@ -111,6 +111,21 @@ describe("errorResponse", () => {
     expect(errorResponse(err, undefined).status).toBe(status);
   });
 
+  it("never echoes the detailed message or the details of an SDK error", async () => {
+    const err = ERR.OIDC_003(
+      "Token endpoint rejected: invalid_grant (session abc)",
+      {
+        details: { oauthError: "invalid_grant", description: "session abc" },
+      },
+    );
+    const body = JSON.stringify(await errorResponse(err, undefined).json());
+    expect(body).not.toContain("abc");
+    expect(body).not.toContain("invalid_grant");
+    expect(JSON.parse(body)).toEqual({
+      error: { code: "OIDC_003", message: "Token request failed" },
+    });
+  });
+
   it("hides an unexpected failure and reports it", async () => {
     const onError = vi.fn();
     const response = errorResponse(new Error("db password=hunter2"), onError);
