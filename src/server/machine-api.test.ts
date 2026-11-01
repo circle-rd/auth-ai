@@ -109,6 +109,31 @@ describe("machine tokens", () => {
   });
 });
 
+describe("machine scope not granted", () => {
+  it("explains who can grant the scope", async () => {
+    idp.tokenHandler = () =>
+      jsonResponse(
+        {
+          error: "invalid_scope",
+          error_description: "The following scopes are invalid: billing:read",
+        },
+        400,
+      );
+    const err = await rejection(api.billing.getUsage("u1"));
+    expect(err.code).toBe("TOK_004");
+    expect(err.message).toContain("superadmin");
+    expect(err.details).toEqual({ scope: "billing:read" });
+    expect(
+      idp.requests.filter((r) => r.url.pathname.startsWith("/api/")),
+    ).toHaveLength(0);
+  });
+
+  it("lets other token failures through unchanged", async () => {
+    idp.tokenHandler = () => jsonResponse({ error: "invalid_client" }, 401);
+    expect((await rejection(api.billing.getUsage("u1"))).code).toBe("OIDC_003");
+  });
+});
+
 describe("billing", () => {
   it("reads the subscription", async () => {
     idp.apiHandler = () =>

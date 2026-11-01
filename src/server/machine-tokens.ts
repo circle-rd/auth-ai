@@ -1,4 +1,5 @@
 import type { AuthClient } from "../client.js";
+import { AuthAiError, ERR } from "../errors.js";
 
 // A cached token is renewed this long before it expires.
 const EXPIRY_SKEW_SECONDS = 30;
@@ -32,6 +33,19 @@ export class MachineTokenProvider {
 
     const request = this.#auth
       .clientCredentials({ scope })
+      .catch((err: unknown) => {
+        // The provider only names the scope: say who can grant it.
+        if (
+          err instanceof AuthAiError &&
+          err.details?.["oauthError"] === "invalid_scope"
+        ) {
+          throw ERR.TOK_004(
+            `The application is not granted the machine scope "${scope}": a superadmin must add it to the application's machine scopes`,
+            { details: { scope }, cause: err },
+          );
+        }
+        throw err;
+      })
       .then((tokens) => {
         this.#cache.set(scope, {
           accessToken: tokens.accessToken,

@@ -52,10 +52,24 @@ async function settle<T>(
   return value;
 }
 
-const reply = (answer: unknown): string => {
-  const text = (answer as { choices?: { message?: { content?: string } }[] })
-    .choices?.[0]?.message?.content;
-  return (text ?? "").slice(0, 80);
+interface ChatAnswer {
+  choices?: {
+    finish_reason?: string;
+    message?: { content?: string | null; reasoning_content?: string | null };
+  }[];
+  usage?: { prompt_tokens?: number; completion_tokens?: number };
+}
+
+const summarise = (answer: unknown): Record<string, unknown> => {
+  const { choices, usage } = answer as ChatAnswer;
+  const choice = choices?.[0];
+  return {
+    reply: (choice?.message?.content ?? "").slice(0, 80),
+    replyLength: choice?.message?.content?.length ?? 0,
+    hasReasoning: Boolean(choice?.message?.reasoning_content),
+    finishReason: choice?.finish_reason,
+    usage,
+  };
 };
 
 /** Exercises every SDK brick for the signed-in user; the report holds no token. */
@@ -171,11 +185,11 @@ export async function runSelfTest(
     if (!chatModel) throw new Error("no model matching /lagarde/ in the plan");
     const answer = await user.gateway.postJson("/v1/chat/completions", {
       model: chatModel,
-      max_tokens: 16,
+      max_tokens: 64,
       messages: [{ role: "user", content: "Reply with the single word: pong" }],
       metadata: { session_id: usageSessionId },
     });
-    return { model: chatModel, reply: reply(answer) };
+    return { model: chatModel, ...summarise(answer) };
   });
 
   const embedModel = models.find((id) => /pplx-embed/i.test(id));
