@@ -14,15 +14,21 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 <!-- Add user-visible changes here. Move to a dated section at release time. -->
 
-## [0.1.0] - Unreleased
+## [0.1.1] - 2026-11-01
+
+### Changed
+
+- **Publishing**: a GitHub release `vX.Y.Z` created from `main` publishes `latest`
+  (`next` for a pre-release); a manual _Nightly_ run publishes `nightly`. Both use
+  npm Trusted Publishing (OIDC) with provenance, no stored npm token. Previous
+  nightlies are no longer deprecated automatically.
+
+## [0.1.0] - 2026-11-01
 
 First release.
 
 ### Added
 
-- **Publishing**: a GitHub release `vX.Y.Z` created from `main` publishes `latest`
-  (`next` for a pre-release); a manual _Nightly_ run publishes `nightly`. Both use
-  npm Trusted Publishing (OIDC) with provenance, no stored npm token.
 - **Core (`@circle-rd/auth-ai`)**: `createAuthClient` (discovery cache, PKCE login,
   callback with ID-token verification, refresh with RFC 8707 resource narrowing,
   logout URL, revoke, introspect, `client_credentials`), `GrantManager` (serialized
@@ -56,5 +62,6 @@ First release.
 - `__Host-` cookies, same-origin redirect targets, refused cross-site logout, URLs built
   on the registered origin, Fastify >= 5.12.6 required.
 
-[Unreleased]: https://github.com/circle-rd/auth-ai/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/circle-rd/auth-ai/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/circle-rd/auth-ai/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/circle-rd/auth-ai/releases/tag/v0.1.0
