@@ -1,8 +1,25 @@
 {
   "name": "@circle-rd/auth-ai",
   "version": "0.1.0",
-  "description": "TypeScript SDK for applications relying on the CIRCLE auth-service identity provider: OIDC sign-in, entitlements, billing, wallet and LiteLLM gateway.",
+  "description": "TypeScript SDK for applications relying on a CIRCLE auth-service identity provider: OIDC sign-in (backend-for-frontend), entitlements, billing, credit wallet and LiteLLM gateway.",
+  "keywords": [
+    "oidc",
+    "oauth2",
+    "pkce",
+    "authentication",
+    "bff",
+    "back-channel-logout",
+    "entitlements",
+    "litellm",
+    "llm",
+    "wallet",
+    "fastify",
+    "react",
+    "vue",
+    "circle"
+  ],
   "license": "MIT",
+  "author": "CIRCLE <https://circle-cyber.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/circle-rd/auth-ai.git"
@@ -27,6 +44,30 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./web": {
+      "types": "./dist/web/index.d.ts",
+      "default": "./dist/web/index.js"
+    },
+    "./fastify": {
+      "types": "./dist/fastify/index.d.ts",
+      "default": "./dist/fastify/index.js"
+    },
+    "./client": {
+      "types": "./dist/browser/index.d.ts",
+      "default": "./dist/browser/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "default": "./dist/react/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "default": "./dist/vue/index.js"
     }
   },
   "files": [
@@ -41,17 +82,48 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "example:build": "tsc -p examples/minimal/tsconfig.json && esbuild examples/minimal/web/app.ts --bundle --format=esm --target=es2022 --minify --outfile=examples/minimal/dist/public/app.js && cp examples/minimal/web/index.html examples/minimal/web/style.css examples/minimal/dist/public/"
+  },
+  "peerDependencies": {
+    "fastify": ">=5.12.6",
+    "react": ">=18",
+    "vue": ">=3.4"
+  },
+  "peerDependenciesMeta": {
+    "fastify": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "jose": "^6.2.14",
+    "openid-client": "^6.8.8",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^22.19.19",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitest/coverage-v8": "^4.1.8",
+    "esbuild": "^0.28.2",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
+    "fastify": "^5.12.7",
+    "happy-dom": "^21.0.4",
     "prettier": "^3.9.9",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.0",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "vue": "^3.5.44"
   }
 }

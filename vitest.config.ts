@@ -7,7 +7,7 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "lcov"],
       include: ["src/**"],
-      exclude: ["src/**/*.test.ts", "src/**/types.ts"],
+      exclude: ["src/**/*.test.ts", "src/**/types.ts", "src/test-support/**"],
       thresholds: { lines: 80 },
     },
   },
