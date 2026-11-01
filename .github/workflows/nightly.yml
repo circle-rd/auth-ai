@@ -1,13 +1,9 @@
 name: Nightly — npm (nightly)
 
+# Manual: run it from the branch to publish (develop, or main). The version
+# exists only in this workspace: nothing is committed back.
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: "Branch to publish from"
-        required: true
-        default: "develop"
-        type: string
 
 concurrency:
   group: nightly
@@ -27,31 +23,42 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # OIDC token for npm Trusted Publishing: no long-lived npm token is used.
       id-token: write
-    env:
-      PACKAGE: "@circle-rd/auth-ai"
     steps:
+      - name: Only develop and main may be published
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          case "$REF_NAME" in
+            develop | main) ;;
+            *) echo "::error::Run this workflow from develop or main, not '${REF_NAME}'."; exit 1 ;;
+          esac
+
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.branch }}
 
       - uses: pnpm/action-setup@v6
 
+      # Trusted Publishing needs npm >= 11.5.1, which Node 24 ships.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
-          cache: pnpm
+          node-version: 24
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The nightly version exists only in this workspace: nothing is committed
-      # back, so no version-bump commit lands on the branch.
-      - name: Compute nightly version
+      # A nightly of an already released version would sort before it
+      # (0.1.0-nightly < 0.1.0): it is numbered after the next patch instead.
+      - name: Compute the nightly version
         id: version
         run: |
+          name=$(node -p "require('./package.json').name")
           base=$(node -p "require('./package.json').version.split('-')[0]")
+          if npm view "${name}@${base}" version >/dev/null 2>&1; then
+            base=$(node -p "const [a,b,c]='${base}'.split('.').map(Number); [a,b,c+1].join('.')")
+          fi
           nightly="${base}-nightly.$(date -u +%Y%m%d).g$(git rev-parse --short=7 HEAD)"
           npm version "$nightly" --no-git-tag-version
           echo "value=$nightly" >> "$GITHUB_OUTPUT"
@@ -59,24 +66,5 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Find the nightly being superseded
-        id: previous
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          previous=$(npm view "$PACKAGE" dist-tags.nightly 2>/dev/null || true)
-          echo "value=$previous" >> "$GITHUB_OUTPUT"
-
       - name: Publish with the nightly dist-tag
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag nightly --access public --provenance
-
-      # npm cannot delete a version once published, but a deprecated one is
-      # flagged and no dist-tag points at it. The registry holds no GitHub
-      # release: none is created for a nightly.
-      - name: Deprecate the superseded nightly
-        if: steps.previous.outputs.value != '' && steps.previous.outputs.value != steps.version.outputs.value
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm deprecate "${PACKAGE}@${{ steps.previous.outputs.value }}" "Superseded nightly build"
+        run: npm publish --tag nightly --access public
