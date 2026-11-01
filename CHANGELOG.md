@@ -20,6 +20,9 @@ First release.
 
 ### Added
 
+- **Publishing**: a GitHub release `vX.Y.Z` created from `main` publishes `latest`
+  (`next` for a pre-release); a manual _Nightly_ run publishes `nightly`. Both use
+  npm Trusted Publishing (OIDC) with provenance, no stored npm token.
 - **Core (`@circle-rd/auth-ai`)**: `createAuthClient` (discovery cache, PKCE login,
   callback with ID-token verification, refresh with RFC 8707 resource narrowing,
   logout URL, revoke, introspect, `client_credentials`), `GrantManager` (serialized

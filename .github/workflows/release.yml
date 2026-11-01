@@ -1,9 +1,11 @@
 name: Release — npm (latest)
 
+# Creating a GitHub release publishes the package: the release (and its tag
+# vX.Y.Z) is the single trigger. Create it from `main` once the version is set
+# in package.json. This workflow never creates a release or a tag itself.
 on:
-  push:
-    tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
+  release:
+    types: [published]
 
 concurrency:
   group: release
@@ -22,30 +24,52 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      # OIDC token for npm Trusted Publishing: no long-lived npm token is used.
       id-token: write
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Require the tagged commit to be on main
+      - name: Check the release against package.json
+        id: release
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          IS_PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
-          git fetch origin main
-          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          version=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "v${version}" ]; then
+            echo "::error::The release tag is '${TAG}' but package.json says '${version}'. Set the version on main, then create the release again."
+            exit 1
+          fi
+          case "$version" in
+            *-*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
+          if [ "$IS_PRERELEASE" != "$prerelease" ]; then
+            echo "::error::Version ${version} must be published as a pre-release=${prerelease} release."
+            exit 1
+          fi
+          if [ "$prerelease" = false ]; then
+            git fetch origin main
+            git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+              echo "::error::A stable release must be created from a commit on main."
+              exit 1
+            }
+            echo "dist_tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "dist_tag=next" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: pnpm/action-setup@v6
 
+      # Trusted Publishing needs npm >= 11.5.1, which Node 24 ships.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
-          cache: pnpm
+          node-version: 24
           registry-url: https://registry.npmjs.org
-
-      - name: Require the tag to match package.json
-        run: |
-          version=$(node -p "require('./package.json').version")
-          test "v${version}" = "${GITHUB_REF_NAME}"
+          package-manager-cache: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -53,12 +77,7 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish with the latest dist-tag
+      - name: Publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag latest --access public --provenance
-
-      - name: Create the GitHub release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          DIST_TAG: ${{ steps.release.outputs.dist_tag }}
+        run: npm publish --tag "$DIST_TAG" --access public

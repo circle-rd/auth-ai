@@ -78,20 +78,32 @@ and a migration note in `CHANGELOG.md` and the docs, and remove the old behaviou
 
 ## 3. Releases
 
-| Channel   | Trigger                              | npm dist-tag |
-| --------- | ------------------------------------ | ------------ |
-| `nightly` | Manual run of the _Nightly_ workflow | `nightly`    |
-| `latest`  | Push of a `vX.Y.Z` tag from `main`   | `latest`     |
+| Channel   | Trigger                                                 | npm dist-tag |
+| --------- | ------------------------------------------------------- | ------------ |
+| `nightly` | Manual run of the _Nightly_ workflow (`develop`/`main`) | `nightly`    |
+| `latest`  | A GitHub release `vX.Y.Z` created from `main`           | `latest`     |
 
 1. Merge `develop` into `main` through a pull request.
 2. Set `version` in `package.json`, move the `[Unreleased]` entries of
    `CHANGELOG.md` under the new version, commit on `main`.
-3. Tag `vX.Y.Z` and push the tag: the _Release_ workflow runs the quality gates,
-   publishes with provenance and creates the GitHub release.
+3. Create the GitHub release (and its tag `vX.Y.Z`) from `main`: this is the only
+   trigger. The _Release_ workflow runs the quality gates, checks that the tag
+   matches `package.json` and publishes with provenance. It never creates a release
+   or a tag itself. A pre-release version (`X.Y.Z-rc.1`) needs a release marked
+   _pre-release_ and is published under the `next` dist-tag.
 4. Merge `main` back into `develop`.
 
-A nightly is published as `X.Y.Z-nightly.<date>.g<sha>` without any commit, and the
-previous nightly is deprecated.
+If a release run fails, fix the cause, then delete the release **and** its tag and
+create them again: re-running a job of a deleted tag fails at checkout.
+
+A nightly is published as `X.Y.Z-nightly.<date>.g<sha>` without any commit (`X.Y.Z`
+is the next patch when `package.json` holds an already published version). Nightlies
+are not deprecated automatically: that needs a token, and Trusted Publishing covers
+publishing only.
+
+Both workflows publish through npm Trusted Publishing (OIDC): no npm token is stored.
+Each one must stay registered as a trusted publisher on npmjs.com, which binds the
+workflow file name.
 
 ---
 

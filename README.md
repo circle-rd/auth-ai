@@ -310,8 +310,6 @@ Security reports: see [SECURITY.md](SECURITY.md). Releases are tracked in
 - **Python port** of the same behaviours (the test suite pins them), for the
   Python backends of the CIRCLE stack.
 - **Migration of [gine](https://github.com/circle-rd/gine)** onto the SDK.
-- **npm Trusted Publishing** once the first release is out, replacing the
-  publish token.
 - **More adapters** on top of the Web-standard handlers, as needs appear.
 
 ## Credits & license
