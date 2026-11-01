@@ -32,8 +32,7 @@ export function createAiRoutes(
       const query = statsQuerySchema.safeParse(
         Object.fromEntries(new URL(request.url).searchParams),
       );
-      if (!query.success)
-        throw ERR.CFG_001("days must be an integer from 1 to 90");
+      if (!query.success) throw ERR.REQ_001();
       const { days } = query.data;
       return jsonResponse(
         await ai

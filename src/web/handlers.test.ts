@@ -847,8 +847,14 @@ describe("frontend data routes", () => {
             withSession(cookie, {}, `/auth/wallet/stats?days=${days}`),
           )
         ).status,
-      ).toBe(500);
+      ).toBe(400);
     }
+    const bad = await mustHandle(
+      withSession(cookie, {}, "/auth/wallet/stats?days=0"),
+    );
+    expect(await bad.json()).toEqual({
+      error: { code: "REQ_001", message: "Invalid request" },
+    });
   });
 
   it("lists the gateway models", async () => {

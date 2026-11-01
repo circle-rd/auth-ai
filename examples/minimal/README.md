@@ -18,7 +18,7 @@ token or secret, to the server log.
 
 ```sh
 pnpm install && pnpm build && pnpm example:build
-cp examples/minimal/.env.example .env   # then fill the two secrets
+cp examples/minimal/.env.example examples/minimal/.env   # then fill the two secrets
 docker compose -f examples/minimal/compose.yml up -d --build
 ```
 

@@ -2,6 +2,7 @@ import { AuthAiError, ERR } from "../errors.js";
 import type { AuthAiErrorCode } from "../errors.js";
 
 const STATUS_BY_CODE: Partial<Record<AuthAiErrorCode, number>> = {
+  REQ_001: 400,
   SES_001: 401,
   SES_002: 400,
   SES_004: 403,

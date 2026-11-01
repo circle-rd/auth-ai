@@ -29,6 +29,7 @@ const DEFAULT_MESSAGES = {
   SES_003: "Sign-in could not be completed",
   SES_004: "Cross-origin request refused",
   SES_005: "Sign-in failed",
+  REQ_001: "Invalid request",
   SRV_001: "Internal error",
 } as const;
 
@@ -89,7 +90,7 @@ function factory(code: AuthAiErrorCode): ErrorFactory {
 
 // Domain prefixes mirror auth-service: CFG_ configuration, OIDC_ protocol
 // exchanges with the identity provider, TOK_ token and grant handling, API_ calls to the auth-service REST API,
-// GW_ calls to the LiteLLM gateway, SES_ browser sessions, SRV_ unexpected
+// GW_ calls to the LiteLLM gateway, SES_ browser sessions, REQ_ invalid requests to the SDK's own routes, SRV_ unexpected
 // failures of the SDK's own HTTP handlers.
 export const ERR = {
   CFG_001: factory("CFG_001"),
@@ -113,5 +114,6 @@ export const ERR = {
   SES_003: factory("SES_003"),
   SES_004: factory("SES_004"),
   SES_005: factory("SES_005"),
+  REQ_001: factory("REQ_001"),
   SRV_001: factory("SRV_001"),
 } as const satisfies Record<AuthAiErrorCode, ErrorFactory>;

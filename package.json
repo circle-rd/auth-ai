@@ -1,8 +1,25 @@
 {
   "name": "@circle-rd/auth-ai",
   "version": "0.1.0",
-  "description": "TypeScript SDK for applications relying on the CIRCLE auth-service identity provider: OIDC sign-in, entitlements, billing, wallet and LiteLLM gateway.",
+  "description": "TypeScript SDK for applications relying on a CIRCLE auth-service identity provider: OIDC sign-in (backend-for-frontend), entitlements, billing, credit wallet and LiteLLM gateway.",
+  "keywords": [
+    "oidc",
+    "oauth2",
+    "pkce",
+    "authentication",
+    "bff",
+    "back-channel-logout",
+    "entitlements",
+    "litellm",
+    "llm",
+    "wallet",
+    "fastify",
+    "react",
+    "vue",
+    "circle"
+  ],
   "license": "MIT",
+  "author": "CIRCLE <https://circle-cyber.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/circle-rd/auth-ai.git"
@@ -68,6 +85,27 @@
     "format:check": "prettier --check .",
     "example:build": "tsc -p examples/minimal/tsconfig.json && esbuild examples/minimal/web/app.ts --bundle --format=esm --target=es2022 --minify --outfile=examples/minimal/dist/public/app.js && cp examples/minimal/web/index.html examples/minimal/web/style.css examples/minimal/dist/public/"
   },
+  "peerDependencies": {
+    "fastify": ">=5.12.6",
+    "react": ">=18",
+    "vue": ">=3.4"
+  },
+  "peerDependenciesMeta": {
+    "fastify": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "jose": "^6.2.14",
+    "openid-client": "^6.8.8",
+    "zod": "^4.6.7"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@testing-library/react": "^16.3.3",
@@ -87,26 +125,5 @@
     "typescript-eslint": "^8.71.0",
     "vitest": "^4.1.8",
     "vue": "^3.5.44"
-  },
-  "dependencies": {
-    "jose": "^6.2.14",
-    "openid-client": "^6.8.8",
-    "zod": "^4.6.7"
-  },
-  "peerDependencies": {
-    "fastify": ">=5.12.6",
-    "react": ">=18",
-    "vue": ">=3.4"
-  },
-  "peerDependenciesMeta": {
-    "fastify": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "vue": {
-      "optional": true
-    }
   }
 }
