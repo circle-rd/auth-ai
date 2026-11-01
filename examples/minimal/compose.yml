@@ -1,0 +1,31 @@
+# Deployed behind the shared Traefik, which reaches containers on the `edge` network.
+services:
+  test-app:
+    build:
+      context: ${SRC_DIR:-../..}
+      dockerfile: examples/minimal/Dockerfile
+    image: auth-ai-example:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "3000"
+      PUBLIC_URL: https://${APP_HOST:-test.circle-cyber.com}
+      AUTH_ISSUER: ${AUTH_ISSUER:-https://auth.circle-cyber.com}
+      AUTH_CLIENT_ID: ${AUTH_CLIENT_ID:-test-app}
+      GATEWAY_URL: ${GATEWAY_URL:-https://llm.circle-cyber.com}
+    networks:
+      - edge
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=edge
+      - traefik.http.routers.test-app.rule=Host(`${APP_HOST:-test.circle-cyber.com}`)
+      - traefik.http.routers.test-app.entrypoints=websecure
+      - traefik.http.routers.test-app.tls.certresolver=letsencrypt
+      - traefik.http.routers.test-app.middlewares=test-app-headers
+      - traefik.http.middlewares.test-app-headers.headers.stsSeconds=31536000
+      - traefik.http.services.test-app.loadbalancer.server.port=3000
+
+networks:
+  edge:
+    name: edge
+    external: true

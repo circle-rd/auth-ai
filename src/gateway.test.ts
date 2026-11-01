@@ -165,6 +165,42 @@ describe("listing", () => {
   });
 });
 
+describe("postJson", () => {
+  it("posts JSON with a fresh token and returns the parsed answer", async () => {
+    gateway.handler = () =>
+      jsonResponse({ choices: [{ message: { content: "hi" } }] });
+    const answer = await client.postJson("/v1/chat/completions", {
+      model: "m",
+      messages: [],
+    });
+    expect(answer).toEqual({ choices: [{ message: { content: "hi" } }] });
+    const [request] = gateway.requests;
+    expect(request?.method).toBe("POST");
+    expect(request?.headers.get("authorization")).toBe("Bearer gw-token-1");
+    expect(request?.headers.get("content-type")).toBe("application/json");
+    expect(await request?.json()).toEqual({ model: "m", messages: [] });
+  });
+
+  it("maps an empty wallet to GW_001", async () => {
+    gateway.handler = () =>
+      jsonResponse(
+        {
+          error: {
+            message: "Insufficient credit. Top up your account to continue.",
+            type: "insufficient_credit",
+            code: "402",
+          },
+        },
+        402,
+      );
+    const err = await rejection(
+      client.postJson("/v1/embeddings", { input: "x" }),
+    );
+    expect(err.code).toBe("GW_001");
+    expect(err.details).toEqual({ status: 402, type: "insufficient_credit" });
+  });
+});
+
 describe("MCP endpoints", () => {
   it("builds the gateway and per-server URLs", () => {
     expect(client.mcpUrl()).toBe(`${GATEWAY_URL}/mcp`);

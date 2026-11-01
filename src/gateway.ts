@@ -117,9 +117,31 @@ export class GatewayClient {
     return `${this.#options.gatewayUrl}/${serverName}/mcp`;
   }
 
+  /**
+   * POSTs JSON to a gateway route (`/v1/chat/completions`, `/v1/embeddings`…)
+   * and returns the parsed answer, which the caller validates. A refusal
+   * becomes a gateway error: GW_001 when the wallet cannot pay (402).
+   */
+  async postJson(path: string, body: unknown): Promise<unknown> {
+    return this.#send(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
   async #getJson<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+    const parsed = schema.safeParse(await this.#send(path, {}));
+    if (!parsed.success) {
+      throw ERR.GW_005(undefined, { cause: parsed.error });
+    }
+    return parsed.data;
+  }
+
+  async #send(path: string, init: RequestInit): Promise<unknown> {
     const response = await this.fetch(`${this.#options.gatewayUrl}${path}`, {
-      headers: { accept: "application/json" },
+      ...init,
+      headers: { accept: "application/json", ...init.headers },
       redirect: "error",
       signal: AbortSignal.timeout(this.#options.timeoutMs),
     });
@@ -127,10 +149,6 @@ export class GatewayClient {
     if (!response.ok) {
       throw toGatewayError(response.status, body, response.headers);
     }
-    const parsed = schema.safeParse(body);
-    if (!parsed.success) {
-      throw ERR.GW_005(undefined, { cause: parsed.error });
-    }
-    return parsed.data;
+    return body;
   }
 }
