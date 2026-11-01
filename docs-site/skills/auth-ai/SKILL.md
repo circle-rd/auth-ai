@@ -5,7 +5,7 @@ description: "Use when: integrating, configuring or troubleshooting @circle-rd/a
 
 # CIRCLE auth-ai
 
-TypeScript SDK (`@circle-rd/auth-ai`, MIT, Node.js >= 22, ESM only) for applications that rely on a CIRCLE auth-service identity provider. Full documentation: https://docs.circle-cyber.com/auth-ai/ . Every page is also served as markdown under `/raw/`, for example https://docs.circle-cyber.com/auth-ai/raw/docs/concepts/architecture.md ; the whole text is at https://docs.circle-cyber.com/auth-ai/llms-full.txt. Version 0.x: the API is not stable and 0.1.0 is not published to npm yet.
+TypeScript SDK (`@circle-rd/auth-ai`, MIT, Node.js >= 22, ESM only) for applications that rely on a CIRCLE auth-service identity provider. Full documentation: https://docs.circle-cyber.com/auth-ai/ . Every page is also served as markdown under `/raw/`, for example https://docs.circle-cyber.com/auth-ai/raw/docs/concepts/architecture.md ; the whole text is at https://docs.circle-cyber.com/auth-ai/llms-full.txt. Version 0.x: the API is not stable.
 
 It is built for auth-service. It is not a client for arbitrary OIDC providers and not an identity provider. It has no debit API (the LiteLLM gateway debits the wallet), no Next.js adapter and no Python port yet.
 
