@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/circle-rd/auth-ai/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/circle-rd/auth-ai/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/circle-rd/auth-ai-ts/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/circle-rd/auth-ai-ts/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://www.npmjs.com/package/@circle-rd/auth-ai"><img alt="npm" src="https://img.shields.io/npm/v/@circle-rd/auth-ai?logo=npm"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
   <a href="https://nodejs.org"><img alt="Node" src="https://img.shields.io/badge/node-22-3c873a?logo=node.js&logoColor=white"></a>
@@ -27,7 +27,11 @@ and call LLMs on their behalf through a [LiteLLM](https://docs.litellm.ai)
 gateway that bills their credit wallet — without writing any OAuth, token
 refresh, logout or billing plumbing yourself.
 
-Full documentation: **https://docs.circle-cyber.com/auth-ai/**
+Full documentation: **https://docs.circle-cyber.com/auth-ai/typescript/**
+
+> **Python backend?** The same SDK exists for Python, with the same behaviours and
+> wire contract: [`auth-ai`](https://github.com/circle-rd/auth-ai-py) on PyPI. It pairs
+> with this package's browser client and React and Vue bindings.
 
 ```ts
 const handlers = await createAuthHandlers({
@@ -287,7 +291,7 @@ The SDK is storage-agnostic on purpose. Before going live:
 ## Documentation
 
 The full documentation is published at
-[docs.circle-cyber.com/auth-ai](https://docs.circle-cyber.com/auth-ai/):
+[docs.circle-cyber.com/auth-ai/typescript](https://docs.circle-cyber.com/auth-ai/typescript/):
 concepts, one guide per framework, the configuration and API reference, the
 error-code registry and a production checklist.
 
@@ -296,7 +300,7 @@ error-code registry and a production checklist.
 
 | Environment | MCP endpoint                                                    |
 | ----------- | --------------------------------------------------------------- |
-| Production  | `https://docs.circle-cyber.com/auth-ai/mcp`                     |
+| Production  | `https://docs.circle-cyber.com/auth-ai/typescript/mcp`          |
 | Local dev   | `http://localhost:3000/mcp` (run `npm run dev` in `docs-site/`) |
 
 **Contributing** — the development rules in [AGENTS.md](AGENTS.md) (naming,
@@ -307,8 +311,6 @@ Security reports: see [SECURITY.md](SECURITY.md). Releases are tracked in
 
 ## Roadmap
 
-- **Python port** of the same behaviours (the test suite pins them), for the
-  Python backends of the CIRCLE stack.
 - **More adapters** on top of the Web-standard handlers, as needs appear.
 
 ## Credits & license

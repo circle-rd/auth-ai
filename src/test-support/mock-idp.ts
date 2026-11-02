@@ -48,13 +48,11 @@ export function jsonResponse(body: unknown, status = 200): Response {
 }
 
 export async function createMockIdp(): Promise<MockIdp> {
-  const { publicKey, privateKey } = await generateKeyPair("EdDSA", {
-    crv: "Ed25519",
-  });
+  const { publicKey, privateKey } = await generateKeyPair("ES256");
   const jwk: JWK = {
     ...(await exportJWK(publicKey)),
     kid: "key-1",
-    alg: "EdDSA",
+    alg: "ES256",
   };
 
   const metadata: Record<string, unknown> = {
@@ -67,7 +65,7 @@ export async function createMockIdp(): Promise<MockIdp> {
     end_session_endpoint: `${ISSUER}/end-session`,
     response_types_supported: ["code"],
     subject_types_supported: ["public"],
-    id_token_signing_alg_values_supported: ["EdDSA"],
+    id_token_signing_alg_values_supported: ["ES256"],
     code_challenge_methods_supported: ["S256"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: [
@@ -94,7 +92,7 @@ export async function createMockIdp(): Promise<MockIdp> {
     async signJwt(claims, options = {}) {
       return new SignJWT(claims)
         .setProtectedHeader({
-          alg: "EdDSA",
+          alg: "ES256",
           kid: options.kid ?? "key-1",
           ...(options.typ ? { typ: options.typ } : {}),
         })
@@ -114,7 +112,7 @@ export async function createMockIdp(): Promise<MockIdp> {
     },
 
     async generateForeignKey() {
-      return (await generateKeyPair("EdDSA", { crv: "Ed25519" })).privateKey;
+      return (await generateKeyPair("ES256")).privateKey;
     },
 
     fetch: async (input, init) => {

@@ -85,8 +85,12 @@ export const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
   Symbol.for("skip-override")
 ] = true;
 
-async function fail(reply: FastifyReply, err: unknown): Promise<FastifyReply> {
-  await send(reply, errorResponse(err, undefined));
+async function fail(
+  reply: FastifyReply,
+  err: unknown,
+  handlers: AuthHandlers,
+): Promise<FastifyReply> {
+  await send(reply, errorResponse(err, handlers.onError));
   return reply;
 }
 
@@ -100,7 +104,7 @@ export function requireAuth(
       if (!webRequest) throw ERR.SES_001();
       request.authSession = await handlers.requireSession(webRequest);
     } catch (err) {
-      return fail(reply, err);
+      return fail(reply, err, handlers);
     }
   };
 }
@@ -116,7 +120,7 @@ export function loadSession(
         ? await handlers.getSession(webRequest)
         : null;
     } catch (err) {
-      return fail(reply, err);
+      return fail(reply, err, handlers);
     }
   };
 }

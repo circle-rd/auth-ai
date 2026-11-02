@@ -5,7 +5,7 @@
       "type": "http"
     },
     "CIRCLE auth-ai Docs": {
-      "url": "https://docs.circle-cyber.com/auth-ai/mcp",
+      "url": "https://docs.circle-cyber.com/auth-ai/typescript/mcp",
       "type": "http"
     }
   }

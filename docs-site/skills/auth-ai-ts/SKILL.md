@@ -1,13 +1,13 @@
 ---
-name: auth-ai
+name: auth-ai-ts
 description: "Use when: integrating, configuring or troubleshooting @circle-rd/auth-ai, the TypeScript SDK for applications that sign users in through a CIRCLE auth-service (backend-for-frontend OIDC sign-in with Fastify or Web-standard handlers, React/Vue bindings, Bearer token verification, back-channel logout, wallet, LiteLLM gateway, billing and consumption), or when an AuthAiError code such as SES_005, TOK_002 or GW_001 appears."
 ---
 
 # CIRCLE auth-ai
 
-TypeScript SDK (`@circle-rd/auth-ai`, MIT, Node.js >= 22, ESM only) for applications that rely on a CIRCLE auth-service identity provider. Full documentation: https://docs.circle-cyber.com/auth-ai/ . Every page is also served as markdown under `/raw/`, for example https://docs.circle-cyber.com/auth-ai/raw/docs/concepts/architecture.md ; the whole text is at https://docs.circle-cyber.com/auth-ai/llms-full.txt. Version 0.x: the API is not stable.
+TypeScript SDK (`@circle-rd/auth-ai`, MIT, Node.js >= 22, ESM only) for applications that rely on a CIRCLE auth-service identity provider. Full documentation: https://docs.circle-cyber.com/auth-ai/typescript/ . Every page is also served as markdown under `/raw/`, for example https://docs.circle-cyber.com/auth-ai/typescript/raw/docs/concepts/architecture.md ; the whole text is at https://docs.circle-cyber.com/auth-ai/typescript/llms-full.txt. Version 0.x: the API is not stable.
 
-It is built for auth-service. It is not a client for arbitrary OIDC providers and not an identity provider. It has no debit API (the LiteLLM gateway debits the wallet), no Next.js adapter and no Python port yet.
+It is built for auth-service. It is not a client for arbitrary OIDC providers and not an identity provider. It has no debit API (the LiteLLM gateway debits the wallet), no Next.js adapter. For Python backends use the sibling Python SDK (`auth-ai` on PyPI, https://docs.circle-cyber.com/auth-ai/python/).
 
 ## Getting started
 
@@ -100,4 +100,4 @@ Other frameworks: call `handlers.handle(request)` (Web `Request` in, `Response` 
 | `GW_001` | Wallet empty (402): send the user to `wallet.topupUrl()`. |
 | `GW_003` | Gateway refused credentials or resource (401/403): check LiteLLM support and the user's plan. |
 
-More: https://docs.circle-cyber.com/auth-ai/docs/reference/error-codes
+More: https://docs.circle-cyber.com/auth-ai/typescript/docs/reference/error-codes

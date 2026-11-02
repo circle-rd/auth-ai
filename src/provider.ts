@@ -9,7 +9,6 @@ import { toAuthAiError } from "./oauth-errors.js";
 const PROVIDER_TTL_MS = 3_600_000;
 
 const ASYMMETRIC_ALGORITHMS = new Set([
-  "EdDSA",
   "ES256",
   "ES384",
   "ES512",
@@ -79,7 +78,7 @@ async function loadProvider(
     );
   }
 
-  // The library assumes RS256 unless told otherwise, whereas auth-service signs with EdDSA.
+  // The library assumes RS256 unless told otherwise, whereas auth-service signs with ES256.
   const configuration = new oidc.Configuration(
     server,
     config.clientId,

@@ -12,6 +12,32 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-02
+
+### Changed
+
+- **Repository**: the GitHub repository is now `circle-rd/auth-ai-ts` (the Python SDK
+  lives in `circle-rd/auth-ai-py`). The npm package name is unchanged.
+- **Documentation URL**: the documentation moves to
+  `https://docs.circle-cyber.com/auth-ai/typescript/` (the Python SDK is at
+  `/auth-ai/python/`). The previous `/auth-ai/…` links, including those of 0.1.0 and
+  0.1.1, are redirected.
+- **Skill name**: the agent skill published with the documentation is now
+  `auth-ai-ts` (the Python SDK ships `auth-ai-py`).
+
+### Removed
+
+- **`EdDSA` is no longer an accepted ID token or JWT algorithm**: RFC 9864 deprecates
+  that name. A provider that only advertises it fails discovery (`OIDC_001`). auth-service
+  signs with ES256 from now on; `RS256`, `PS*` and `ES*` stay accepted.
+
+### Security
+
+- A server-side failure (a 5xx answer) of the sign-in handlers and of the Fastify hooks
+  is now reported to `onError` too, so the cause shows up in the application's logs
+  while the response still carries only the public code. `AuthHandlers` exposes the
+  `onError` it was created with.
+
 <!-- Add user-visible changes here. Move to a dated section at release time. -->
 
 ## [0.1.1] - 2026-11-01
@@ -62,6 +88,7 @@ First release.
 - `__Host-` cookies, same-origin redirect targets, refused cross-site logout, URLs built
   on the registered origin, Fastify >= 5.12.6 required.
 
-[Unreleased]: https://github.com/circle-rd/auth-ai/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/circle-rd/auth-ai/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/circle-rd/auth-ai/releases/tag/v0.1.0
+[Unreleased]: https://github.com/circle-rd/auth-ai-ts/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/circle-rd/auth-ai-ts/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/circle-rd/auth-ai-ts/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/circle-rd/auth-ai-ts/releases/tag/v0.1.0

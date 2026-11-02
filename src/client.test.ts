@@ -116,6 +116,11 @@ describe("discovery", () => {
     idp.metadata["id_token_signing_alg_values_supported"] = ["HS256"];
     await expectAuthAiError(auth.startLogin(), "OIDC_001");
   });
+
+  it("rejects a provider that only advertises the deprecated EdDSA", async () => {
+    idp.metadata["id_token_signing_alg_values_supported"] = ["EdDSA"];
+    await expectAuthAiError(auth.startLogin(), "OIDC_001");
+  });
 });
 
 describe("handleCallback", () => {

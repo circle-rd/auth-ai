@@ -1,6 +1,6 @@
 {
   "name": "@circle-rd/auth-ai",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "TypeScript SDK for applications relying on a CIRCLE auth-service identity provider: OIDC sign-in (backend-for-frontend), entitlements, billing, credit wallet and LiteLLM gateway.",
   "keywords": [
     "oidc",
@@ -39,11 +39,11 @@
   "author": "CIRCLE <https://circle-cyber.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/circle-rd/auth-ai.git"
+    "url": "git+https://github.com/circle-rd/auth-ai-ts.git"
   },
-  "homepage": "https://github.com/circle-rd/auth-ai",
+  "homepage": "https://github.com/circle-rd/auth-ai-ts",
   "bugs": {
-    "url": "https://github.com/circle-rd/auth-ai/issues"
+    "url": "https://github.com/circle-rd/auth-ai-ts/issues"
   },
   "publishConfig": {
     "access": "public",
