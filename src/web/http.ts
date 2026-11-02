@@ -57,7 +57,7 @@ export function redirectResponse(
  * Serialises a failure as the same `{ error: { code, message } }` envelope
  * auth-service uses, with the code and a generic message only: the detailed
  * message and the details stay in the error, for the application's logs. Any
- * other failure is reported to `onError` and answered generically.
+ * other failure, and any server-side one (5xx), is reported to `onError`.
  */
 export function errorResponse(
   err: unknown,
@@ -65,11 +65,11 @@ export function errorResponse(
   headers?: Headers,
 ): Response {
   if (err instanceof AuthAiError) {
-    return jsonResponse(
-      { error: err.toPublicJSON() },
-      STATUS_BY_CODE[err.code] ?? 500,
-      headers,
-    );
+    const status = STATUS_BY_CODE[err.code] ?? 500;
+    // A server-side failure (provider or API down, unexpected answer) needs a log
+    // line: the response carries the public code only.
+    if (status >= 500) onError?.(err);
+    return jsonResponse({ error: err.toPublicJSON() }, status, headers);
   }
   onError?.(err);
   return jsonResponse({ error: ERR.SRV_001().toPublicJSON() }, 500, headers);

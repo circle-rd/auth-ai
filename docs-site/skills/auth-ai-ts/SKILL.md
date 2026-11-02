@@ -1,5 +1,5 @@
 ---
-name: auth-ai
+name: auth-ai-ts
 description: "Use when: integrating, configuring or troubleshooting @circle-rd/auth-ai, the TypeScript SDK for applications that sign users in through a CIRCLE auth-service (backend-for-frontend OIDC sign-in with Fastify or Web-standard handlers, React/Vue bindings, Bearer token verification, back-channel logout, wallet, LiteLLM gateway, billing and consumption), or when an AuthAiError code such as SES_005, TOK_002 or GW_001 appears."
 ---
 

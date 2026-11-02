@@ -134,10 +134,19 @@ describe("errorResponse", () => {
     expect(onError).toHaveBeenCalledOnce();
   });
 
-  it("does not report an SDK error twice", () => {
+  it("does not report a client-side SDK error", () => {
     const onError = vi.fn();
     errorResponse(ERR.SES_001(), onError);
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("reports a server-side SDK error, which the response does not detail", async () => {
+    const onError = vi.fn();
+    const err = ERR.OIDC_001("Discovery failed: connection refused");
+    const response = errorResponse(err, onError);
+    expect(response.status).toBe(502);
+    expect(JSON.stringify(await response.json())).not.toContain("refused");
+    expect(onError).toHaveBeenCalledExactlyOnceWith(err);
   });
 });
 

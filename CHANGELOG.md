@@ -12,6 +12,24 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 ## [Unreleased]
 
+### Changed
+
+- **Skill name**: the agent skill published with the documentation is now
+  `auth-ai-ts` (the Python SDK ships `auth-ai-py`).
+
+### Removed
+
+- **`EdDSA` is no longer an accepted ID token or JWT algorithm**: RFC 9864 deprecates
+  that name. A provider that only advertises it fails discovery (`OIDC_001`). auth-service
+  signs with ES256 from now on; `RS256`, `PS*` and `ES*` stay accepted.
+
+### Security
+
+- A server-side failure (a 5xx answer) of the sign-in handlers and of the Fastify hooks
+  is now reported to `onError` too, so the cause shows up in the application's logs
+  while the response still carries only the public code. `AuthHandlers` exposes the
+  `onError` it was created with.
+
 <!-- Add user-visible changes here. Move to a dated section at release time. -->
 
 ## [0.1.1] - 2026-11-01

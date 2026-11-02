@@ -88,6 +88,8 @@ export interface AuthHandlers {
   /** Origin the SDK builds URLs on: that of `redirectUri`, never a request header. */
   readonly origin: string;
   readonly basePath: string;
+  /** The `onError` the handlers were created with: adapters use it for their own failures. */
+  readonly onError: ((error: unknown) => void) | undefined;
 }
 
 function base64Url(bytes: Uint8Array): string {
@@ -391,6 +393,7 @@ export async function createAuthHandlers(
   return {
     origin,
     basePath,
+    onError: options.onError,
     getSession,
     requireSession,
     async handle(request) {
