@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/circle-rd/auth-ai/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/circle-rd/auth-ai/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/circle-rd/auth-ai-ts/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/circle-rd/auth-ai-ts/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://www.npmjs.com/package/@circle-rd/auth-ai"><img alt="npm" src="https://img.shields.io/npm/v/@circle-rd/auth-ai?logo=npm"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
   <a href="https://nodejs.org"><img alt="Node" src="https://img.shields.io/badge/node-22-3c873a?logo=node.js&logoColor=white"></a>

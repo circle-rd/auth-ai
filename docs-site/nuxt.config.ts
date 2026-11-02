@@ -37,7 +37,7 @@ export default defineNuxtConfig({
           {
             title: "CIRCLE auth-ai on GitHub",
             description: "Source, issues and releases.",
-            href: "https://github.com/circle-rd/auth-ai",
+            href: "https://github.com/circle-rd/auth-ai-ts",
           },
           {
             title: "CIRCLE auth-service documentation",

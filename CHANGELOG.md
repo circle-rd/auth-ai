@@ -12,8 +12,12 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-02
+
 ### Changed
 
+- **Repository**: the GitHub repository is now `circle-rd/auth-ai-ts` (the Python SDK
+  lives in `circle-rd/auth-ai-py`). The npm package name is unchanged.
 - **Skill name**: the agent skill published with the documentation is now
   `auth-ai-ts` (the Python SDK ships `auth-ai-py`).
 
@@ -80,6 +84,7 @@ First release.
 - `__Host-` cookies, same-origin redirect targets, refused cross-site logout, URLs built
   on the registered origin, Fastify >= 5.12.6 required.
 
-[Unreleased]: https://github.com/circle-rd/auth-ai/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/circle-rd/auth-ai/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/circle-rd/auth-ai/releases/tag/v0.1.0
+[Unreleased]: https://github.com/circle-rd/auth-ai-ts/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/circle-rd/auth-ai-ts/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/circle-rd/auth-ai-ts/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/circle-rd/auth-ai-ts/releases/tag/v0.1.0

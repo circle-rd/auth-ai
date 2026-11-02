@@ -16,7 +16,7 @@ A TypeScript SDK for applications that sign their users in through a [CIRCLE aut
 Get started
 ::::
 
-::::u-button{to="https://github.com/circle-rd/auth-ai" target="_blank" size="xl" variant="outline" color="neutral" icon="i-simple-icons-github"}
+::::u-button{to="https://github.com/circle-rd/auth-ai-ts" target="_blank" size="xl" variant="outline" color="neutral" icon="i-simple-icons-github"}
 GitHub
 ::::
 :::
