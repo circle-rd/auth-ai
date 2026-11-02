@@ -18,6 +18,10 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 - **Repository**: the GitHub repository is now `circle-rd/auth-ai-ts` (the Python SDK
   lives in `circle-rd/auth-ai-py`). The npm package name is unchanged.
+- **Documentation URL**: the documentation moves to
+  `https://docs.circle-cyber.com/auth-ai/typescript/` (the Python SDK is at
+  `/auth-ai/python/`). The previous `/auth-ai/…` links, including those of 0.1.0 and
+  0.1.1, are redirected.
 - **Skill name**: the agent skill published with the documentation is now
   `auth-ai-ts` (the Python SDK ships `auth-ai-py`).
 
