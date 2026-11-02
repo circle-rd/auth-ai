@@ -49,7 +49,7 @@ tokens, the wallet or the gateway (see its README).
 The documentation site lives in `docs-site/` (Docus). Build it in Docker:
 
 ```bash
-docker build -t auth-ai-docs ./docs-site
+docker build -t auth-ai-ts-docs ./docs-site
 ```
 
 ---

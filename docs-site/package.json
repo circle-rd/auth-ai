@@ -1,5 +1,5 @@
 {
-    "name": "auth-ai-docs",
+    "name": "auth-ai-ts-docs",
     "version": "1.0.0",
     "private": true,
     "description": "CIRCLE auth-ai documentation — TypeScript SDK for applications relying on a CIRCLE auth-service identity provider.",
