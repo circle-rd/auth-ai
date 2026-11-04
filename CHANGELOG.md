@@ -12,6 +12,13 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 ## [Unreleased]
 
+### Changed
+
+- **Logout without a session**: `POST /auth/logout` answers the provider's logout URL even when
+  the request carries no session, built without `id_token_hint`. The provider ends its single
+  sign-on session for every application and asks the user to confirm. `logoutUrl` is `null`
+  only when the provider advertises no `end_session_endpoint`.
+
 ## [0.1.2] - 2026-11-02
 
 ### Changed
