@@ -347,15 +347,16 @@ export async function createAuthHandlers(
     }
     const session = await readSession(request);
     let logoutUrl: string | null = null;
-    if (session) {
-      try {
-        logoutUrl = await auth.logoutUrl({ idTokenHint: session.idToken });
-      } catch (err) {
-        // A provider without end-session still lets the local session end.
-        options.onError?.(err);
-      }
-      await endSessions([session]);
+    try {
+      // The SSO session is shared by every application: end it even without a local session.
+      logoutUrl = await auth.logoutUrl(
+        session ? { idTokenHint: session.idToken } : {},
+      );
+    } catch (err) {
+      // A provider without end-session still lets the local session end.
+      options.onError?.(err);
     }
+    if (session) await endSessions([session]);
 
     const headers = withCookies(clearCookie(sessionCookie, secure));
     if (request.headers.get("accept")?.includes("application/json")) {

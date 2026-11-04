@@ -598,13 +598,31 @@ describe("logout", () => {
     expect(await sessions.countByUser("user-1")).toBe(1);
   });
 
-  it("is idempotent without a session", async () => {
+  it("still answers the provider logout URL without a session, with no id_token_hint", async () => {
     const response = await mustHandle(
       post(null, { origin: ORIGIN, accept: "application/json" }),
     );
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ logoutUrl: null });
+    const { logoutUrl } = (await response.json()) as { logoutUrl: string };
+    const url = new URL(logoutUrl);
+    expect(url.origin + url.pathname).toBe(`${ISSUER}/end-session`);
+    expect(url.searchParams.has("id_token_hint")).toBe(false);
     expect(onSessionsEnded).not.toHaveBeenCalled();
+  });
+
+  it("redirects a plain form post without a session to the provider logout", async () => {
+    const response = await mustHandle(post(null, { origin: ORIGIN }));
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toContain(`${ISSUER}/end-session`);
+  });
+
+  it("falls back to the default redirect without a session when the provider has no end-session", async () => {
+    delete idp.metadata["end_session_endpoint"];
+    await build();
+    const response = await mustHandle(post(null, { origin: ORIGIN }));
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("/");
+    expect(onError).toHaveBeenCalled();
   });
 
   it("still ends the local session when the provider has no end-session endpoint", async () => {
