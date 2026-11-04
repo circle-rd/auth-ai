@@ -12,6 +12,8 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-04
+
 ### Changed
 
 - **Logout without a session**: `POST /auth/logout` answers the provider's logout URL even when
