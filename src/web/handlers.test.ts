@@ -23,6 +23,7 @@ const SECRET = "0123456789abcdef0123456789abcdef";
 const EVENT = "http://schemas.openid.net/event/backchannel-logout";
 const SESSION_COOKIE = "__Host-aai_session";
 const LOGIN_COOKIE = "__Host-aai_login";
+const LOGOUT_COOKIE = "__Host-aai_logout";
 
 let idp: MockIdp;
 let sessions: MemorySessionStore;
@@ -37,10 +38,11 @@ let currentRoles: string[];
 
 async function build(
   overrides: Partial<AuthHandlersOptions> = {},
+  postLogoutRedirectUri = `${ORIGIN}/`,
 ): Promise<void> {
   const auth = createTestAuth(idp, {
     redirectUri: `${ORIGIN}/auth/callback`,
-    postLogoutRedirectUri: `${ORIGIN}/`,
+    postLogoutRedirectUri,
   });
   grants = new GrantManager({ auth, store: new MemoryGrantStore() });
   handlers = await createAuthHandlers({
@@ -424,6 +426,82 @@ describe("callback", () => {
   });
 });
 
+describe("userinfo", () => {
+  it("fills email from UserInfo when the ID token omits it", async () => {
+    idp.tokenHandler = async () => {
+      const nonce = (idp as { nonce?: string }).nonce;
+      return jsonResponse({
+        token_type: "Bearer",
+        expires_in: 3600,
+        access_token: "access-0",
+        refresh_token: "refresh-0",
+        id_token: await idp.idToken({ nonce, sid: "sid-1", name: "Ada" }),
+      });
+    };
+    idp.userinfoHandler = () =>
+      jsonResponse({
+        sub: "user-1",
+        email: "ada@example.com",
+        email_verified: true,
+      });
+
+    const cookie = await signIn();
+    const response = await mustHandle(
+      new Request(`${ORIGIN}/auth/me`, {
+        headers: { cookie: cookieHeader([SESSION_COOKIE, cookie]) },
+      }),
+    );
+    const body = (await response.json()) as {
+      user: { email?: string; emailVerified?: boolean };
+    };
+
+    expect(body.user.email).toBe("ada@example.com");
+    expect(body.user.emailVerified).toBe(true);
+    const [request] = idp.requestsTo("/userinfo");
+    expect(request?.headers.get("authorization")).toBe("Bearer access-0");
+  });
+
+  it("does not replace claims already present in the ID token", async () => {
+    idp.userinfoHandler = () =>
+      jsonResponse({ sub: "user-1", name: "From UserInfo" });
+
+    const cookie = await signIn();
+    const response = await mustHandle(
+      new Request(`${ORIGIN}/auth/me`, {
+        headers: { cookie: cookieHeader([SESSION_COOKIE, cookie]) },
+      }),
+    );
+    const body = (await response.json()) as { user: { name?: string } };
+
+    expect(body.user.name).toBe("Ada");
+  });
+
+  it("refuses UserInfo for another subject", async () => {
+    idp.userinfoHandler = () =>
+      jsonResponse({ sub: "someone-else", email: "other@example.com" });
+
+    const login = await mustHandle(get("/auth/login"));
+    const authorize = new URL(login.headers.get("location") ?? "");
+    (idp as { nonce?: string }).nonce =
+      authorize.searchParams.get("nonce") ?? "";
+    const response = await mustHandle(
+      get(
+        `/auth/callback?code=abc&state=${authorize.searchParams.get("state")}&iss=${encodeURIComponent(ISSUER)}`,
+        {
+          cookie: cookieHeader([
+            LOGIN_COOKIE,
+            cookiesOf(login).get(LOGIN_COOKIE) ?? "",
+          ]),
+        },
+      ),
+    );
+
+    expect(response.status).toBe(403);
+    expect(await sessions.countByUser("user-1")).toBe(0);
+    expect(onError).toHaveBeenCalled();
+  });
+});
+
 describe("me", () => {
   it("returns the user without any token or provider session id", async () => {
     const cookie = await signIn();
@@ -649,6 +727,73 @@ describe("logout", () => {
     expect(await sessions.countByUser("user-1")).toBe(0);
     expect(await grants.has("user-1")).toBe(false);
     expect(onError).toHaveBeenCalledOnce();
+  });
+});
+
+describe("logout callback", () => {
+  const post = (cookie: string, headers: Record<string, string> = {}) =>
+    new Request(`${ORIGIN}/auth/logout`, {
+      method: "POST",
+      headers: {
+        cookie: cookieHeader([SESSION_COOKIE, cookie]),
+        ...headers,
+      },
+    });
+
+  it("sends state and returns through the logout callback", async () => {
+    await build({}, `${ORIGIN}/auth/logout/callback`);
+    const cookie = await signIn();
+    const response = await mustHandle(
+      post(cookie, { origin: ORIGIN, accept: "application/json" }),
+    );
+    const { logoutUrl } = (await response.json()) as { logoutUrl: string };
+    const url = new URL(logoutUrl);
+    const state = url.searchParams.get("state");
+    expect(state).toBeTruthy();
+    expect(url.searchParams.get("post_logout_redirect_uri")).toBe(
+      `${ORIGIN}/auth/logout/callback`,
+    );
+    const sealed = cookiesOf(response).get(LOGOUT_COOKIE);
+    expect(sealed).toBeTruthy();
+
+    const callback = await mustHandle(
+      new Request(`${ORIGIN}/auth/logout/callback?state=${state}`, {
+        headers: { cookie: cookieHeader([LOGOUT_COOKIE, sealed ?? ""]) },
+      }),
+    );
+
+    expect(callback.status).toBe(303);
+    expect(callback.headers.get("location")).toBe("/");
+    expect(callback.headers.getSetCookie()[0]).toContain("Max-Age=0");
+  });
+
+  it.each(["", "?state=other"])(
+    "accepts a missing or different state after logout (%s)",
+    async (query) => {
+      await build({}, `${ORIGIN}/auth/logout/callback`);
+      const cookie = await signIn();
+      const response = await mustHandle(
+        post(cookie, { origin: ORIGIN, accept: "application/json" }),
+      );
+      const sealed = cookiesOf(response).get(LOGOUT_COOKIE);
+
+      const callback = await mustHandle(
+        new Request(`${ORIGIN}/auth/logout/callback${query}`, {
+          headers: { cookie: cookieHeader([LOGOUT_COOKIE, sealed ?? ""]) },
+        }),
+      );
+
+      expect(callback.status).toBe(303);
+      expect(callback.headers.get("location")).toBe("/");
+    },
+  );
+
+  it("redirects to the default page without a logout cookie", async () => {
+    const response = await mustHandle(
+      get("/auth/logout/callback?state=missing"),
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("/");
   });
 });
 
