@@ -10,6 +10,13 @@ import type { AuthAiErrorDetails } from "./errors.js";
 export type OAuthContext =
   "discovery" | "authorization-response" | "token-request" | "userinfo";
 
+// openid-client codes for a UserInfo answer that arrived but cannot be read.
+const MALFORMED_RESPONSE_CODES: ReadonlySet<string> = new Set([
+  "OAUTH_PARSE_ERROR",
+  "OAUTH_RESPONSE_IS_NOT_JSON",
+  "OAUTH_INVALID_RESPONSE",
+]);
+
 /**
  * Maps an openid-client failure to the SDK registry. Response bodies are
  * reduced to the RFC 6749 `error` and `error_description` fields, which carry
@@ -32,9 +39,15 @@ export function toAuthAiError(
         cause: err,
       });
     }
-    return ERR.TOK_001("The UserInfo response has an unexpected shape", {
-      cause: err,
-    });
+    if (
+      err instanceof ClientError &&
+      MALFORMED_RESPONSE_CODES.has(err.code ?? "")
+    ) {
+      return ERR.TOK_001("The UserInfo response has an unexpected shape", {
+        cause: err,
+      });
+    }
+    return ERR.OIDC_003("The UserInfo request failed", { cause: err });
   }
 
   if (err instanceof ResponseBodyError) {
