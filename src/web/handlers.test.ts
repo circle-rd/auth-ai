@@ -461,6 +461,43 @@ describe("userinfo", () => {
     expect(request?.headers.get("authorization")).toBe("Bearer access-0");
   });
 
+  it("fills claims the refreshed ID token omits from UserInfo on renewal", async () => {
+    await build({ claimsRenewSeconds: 0 });
+    idp.userinfoHandler = () =>
+      jsonResponse({
+        sub: "user-1",
+        email: "renewed@example.com",
+        email_verified: true,
+      });
+
+    const cookie = await signIn();
+    const response = await mustHandle(withSession(cookie));
+    const body = (await response.json()) as {
+      user: { email?: string; emailVerified?: boolean };
+    };
+
+    expect(refreshes).toBe(1);
+    expect(body.user.email).toBe("renewed@example.com");
+    expect(body.user.emailVerified).toBe(true);
+    expect(
+      idp.requestsTo("/userinfo").at(-1)?.headers.get("authorization"),
+    ).toBe("Bearer access-r1");
+  });
+
+  it("keeps the session and answers 502 when UserInfo is unreachable on renewal", async () => {
+    await build({ claimsRenewSeconds: 0 });
+    const cookie = await signIn();
+    idp.userinfoHandler = () => {
+      throw new TypeError("fetch failed");
+    };
+
+    expect((await mustHandle(withSession(cookie))).status).toBe(502);
+    expect(await sessions.countByUser("user-1")).toBe(1);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "OIDC_003" }),
+    );
+  });
+
   it("does not replace claims already present in the ID token", async () => {
     idp.userinfoHandler = () =>
       jsonResponse({ sub: "user-1", name: "From UserInfo" });
