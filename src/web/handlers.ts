@@ -382,7 +382,7 @@ export async function createAuthHandlers(
     if (request.headers.get("accept")?.includes("application/json")) {
       return jsonResponse({ logoutUrl }, 200, headers);
     }
-    return redirectResponse(logoutUrl ?? defaultRedirect, 303, headers);
+    return redirectResponse(logoutUrl ?? next, 303, headers);
   }
 
   /**

@@ -703,6 +703,23 @@ describe("logout", () => {
     expect(onError).toHaveBeenCalled();
   });
 
+  it("keeps the requested destination when the provider has no end-session", async () => {
+    const cookie = await signIn();
+    delete idp.metadata["end_session_endpoint"];
+    await build();
+    const response = await mustHandle(
+      new Request(`${ORIGIN}/auth/logout?next=/settings`, {
+        method: "POST",
+        headers: {
+          cookie: cookieHeader([SESSION_COOKIE, cookie]),
+          origin: ORIGIN,
+        },
+      }),
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("/settings");
+  });
+
   it("still ends the local session when the provider has no end-session endpoint", async () => {
     const cookie = await signIn();
     delete idp.metadata["end_session_endpoint"];
