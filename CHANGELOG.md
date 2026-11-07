@@ -16,7 +16,7 @@ Sections, when present, appear in this order: `Added`, `Changed`, `Removed`,
 
 ### Added
 
-- **UserInfo enrichment**: after the code exchange and after each refresh, the SDK calls the
+- **UserInfo enrichment**: after the code exchange and during server-managed session renewals, the SDK calls the
   provider's `userinfo_endpoint` and fills claims the ID token omits (`email`, `email_verified`
   and the standard profile claims). The UserInfo `sub` is checked against the ID token before
   any claim is merged; claims already present in the ID token are never replaced.
